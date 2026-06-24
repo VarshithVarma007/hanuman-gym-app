@@ -9,7 +9,7 @@ import os
 # Set page layout configuration to wide for a sweeping dashboard layout
 st.set_page_config(page_title="Hanuman Gym OS", page_icon="🏋️‍♂️", layout="wide")
 
-# 🎨 EXCLUSIVE STEALTH DARK PREMIUM RESUME STYLING ENGINE (CSS)
+# 🎨 EXCLUSIVE STEALTH DARK PREMIUM STYLING ENGINE (CSS)
 stealth_ui_css = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
@@ -76,7 +76,11 @@ metrics_file = "metrics_ledger.csv"
 payments_file = "payments_ledger.csv"
 workout_plans_file = "workout_plans_db.csv"
 
-def init_production_databases():
+def init_production_databases(force_reset=False):
+    if force_reset:
+        for f in [users_file, metrics_file, payments_file, workout_plans_file]:
+            if os.path.exists(f): os.remove(f)
+            
     if not os.path.exists(users_file):
         pd.DataFrame([{"Username": "varshith", "Password": "admin123", "Role": "Owner"}]).to_csv(users_file, index=False)
     if not os.path.exists(metrics_file):
@@ -94,7 +98,14 @@ def init_production_databases():
             {"Day": "Leg Day", "Exercise": "Barbell Back Squats", "Sets": 4, "Reps": "6-8", "Instructions": "Hit depth below parallel safely."}
         ]).to_csv(workout_plans_file, index=False)
 
-init_production_databases()
+# Self-healing parsing fallback execution block
+try:
+    if os.path.exists(metrics_file):
+        pd.read_csv(metrics_file)
+    init_production_databases(force_reset=False)
+except Exception:
+    # If a parser structural error triggers, force clear corrupted database files instantly
+    init_production_databases(force_reset=True)
 
 # State Memory Vector Management
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
@@ -245,7 +256,6 @@ if is_owner:
             st.write("#### Invoices Stream Ledger")
             st.dataframe(p_df, use_container_width=True)
             
-            # Simulated Verification Loop Engine
             pending_users = p_df[p_df['Status'] != 'Approved']['Username'].tolist()
             if pending_users:
                 st.write("#### 🛡️ Gateway Verification Action Center")
@@ -316,7 +326,6 @@ else:
                 "calories": calories, "tdee": int(tdee), "protein": protein, "carbs": carbs, "fats": fats, "bmi": bmi_calc
             }
             
-            # Commit logs safely straight into local server disk storage metrics database tracking files array layer
             timestamp_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             pd.DataFrame([{
                 "Timestamp": timestamp_str, "Username": st.session_state.active_username, "Weight": w_kg,
@@ -343,7 +352,7 @@ else:
             st.altair_chart(d_chart, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # MEMBER TAB 3: PERSONAL PROGRESS TRACKER (TELEMETRY INPUT BOARD)
+    # MEMBER TAB 3: PERSONAL PROGRESS TRACKER
     with tabs[2]:
         st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
         st.markdown("### 📅 Biometric Progress Synchronization Core")
@@ -366,10 +375,14 @@ else:
                 }]).to_csv(metrics_file, mode='a', header=False, index=False)
                 st.success("Telemetry payload synced successfully to server disk database.")
                 
-        if os.path.exists(metrics_file):
-            with st.expander("📚 Access My Personal Historical Tracking Logs"):
-                g_df = pd.read_csv(metrics_file)
-                st.dataframe(g_df[g_df['Username'] == st.session_state.active_username], use_container_width=True)
+        try:
+            g_df = pd.read_csv(metrics_file)
+            user_data = g_df[g_df['Username'] == st.session_state.active_username]
+            if not user_data.empty:
+                with st.expander("📚 Access My Personal Historical Tracking Logs"):
+                    st.dataframe(user_data, use_container_width=True)
+        except Exception:
+            pass
         st.markdown("</div>", unsafe_allow_html=True)
 
     # MEMBER TAB 4: PAYWAY LOCK STATION
