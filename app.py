@@ -65,6 +65,7 @@ health_profiles_file = "health_profiles_db.csv"
 daily_logs_file = "daily_activity_logs.csv"
 
 def init_system_file_architecture():
+    # If file exists but is corrupted/old, let's fix it by standardizing columns dynamically on load
     if not os.path.exists(users_file):
         pd.DataFrame([{"Username": "varshith", "Password": "admin123", "Role": "Owner", "Paid": True}]).to_csv(users_file, index=False)
     if not os.path.exists(health_profiles_file):
@@ -100,8 +101,24 @@ if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'username' not in st.session_state: st.session_state.username = None
 
 def get_user_databases():
-    df = pd.read_csv(users_file)
-    return dict(zip(df['Username'].astype(str), df['Password'].astype(str))), dict(zip(df['Username'].astype(str), df['Role'].astype(str))), dict(zip(df['Username'].astype(str), df['Paid'].astype(bool)))
+    try:
+        df = pd.read_csv(users_file)
+        # Dynamic fault-tolerant mapping: convert headers to Capitalized to fix any old file conflicts
+        df.columns = [c.capitalize() for c in df.columns]
+        
+        # Backwards compatibility check for missing columns in legacy cloud files
+        if "Role" not in df.columns: df["Role"] = "Member"
+        if "Paid" not in df.columns: df["Paid"] = True
+        
+        # Enforce master admin credentials safety row if wiped
+        if not ((df['Username'] == 'varshith').any()):
+            df = pd.concat([df, pd.DataFrame([{"Username": "varshith", "Password": "admin123", "Role": "Owner", "Paid": True}])], ignore_index=True)
+            df.to_csv(users_file, index=False)
+            
+        return dict(zip(df['Username'].astype(str), df['Password'].astype(str))), dict(zip(df['Username'].astype(str), df['Role'].astype(str))), dict(zip(df['Username'].astype(str), df['Paid'].astype(bool)))
+    except Exception:
+        # Emergency absolute recovery fallback track
+        return {"varshith": "admin123"}, {"varshith": "Owner"}, {"varshith": True}
 
 user_pass, user_role, user_paid = get_user_databases()
 
@@ -141,7 +158,7 @@ is_owner = (user_role.get(st.session_state.username, "Member") == "Owner")
 # 🎛️ PLATFORM MASTER TOP PANEL HEADLINE
 st.markdown(
     "<div style='text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 15px;'>"
-    "<h1 style='margin:0; font-size:32px;'>🏋️‍♂️ HANUMAN AUTOMATED SAAST ENGINE</h1>"
+    "<h1 style='margin:0; font-size:32px;'>🏋️‍♂️ HANUMAN AUTOMATED SAAS ENGINE</h1>"
     f"<p style='color:#45A29E; letter-spacing:4px; font-size:12px; font-weight:bold; margin:5px 0 0 0;'>ACTIVE OPERATOR: {st.session_state.username.upper()} | ROLE MATRICES VERIFIED</p>"
     "</div>", unsafe_allow_html=True
 )
@@ -165,13 +182,13 @@ if is_owner:
         st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
         st.markdown("### 📡 Global Facility Command Center")
         
-        # Real-Time Operational Counts
         u_df = pd.read_csv(users_file)
+        u_df.columns = [c.capitalize() for c in u_df.columns]
         hp_df = pd.read_csv(health_profiles_file)
         
         m_c1, m_c2, m_c3 = st.columns(3)
         m_c1.metric("Registered Cohorts Base", f"{len(u_df)} Accounts")
-        m_c2.metric("Premium Active Accounts", f"{len(u_df[u_df['Paid'] == True])} Members")
+        m_c2.metric("Premium Active Accounts", f"{len(u_df[u_df['Paid'] == True])} Members" if "Paid" in u_df.columns else f"{len(u_df)} Members")
         m_c3.metric("Evaluated Medical Intake Profiles", f"{len(hp_df)} Completed")
         
         st.write("---")
@@ -200,20 +217,22 @@ if is_owner:
         st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
         st.markdown("### 💳 Corporate Ledger Audit Infrastructure")
         u_df = pd.read_csv(users_file)
+        u_df.columns = [c.capitalize() for c in u_df.columns]
         
         st.write("#### 🛡️ License Activation Control Desk")
         st.dataframe(u_df, use_container_width=True)
         
-        pending_activation_users = u_df[u_df['Paid'] == False]['Username'].tolist()
-        if pending_activation_users:
-            t_user = st.selectbox("Select Target Account to Unblock Premium Modules:", pending_activation_users)
-            if st.button("Authorize License Token and Grant Access Key", use_container_width=True):
-                u_df.loc[u_df['Username'] == t_user, 'Paid'] = True
-                u_df.to_csv(users_file, index=False)
-                st.success(f"Premium activation sequence complete for account: `{t_user.upper()}`")
-                st.rerun()
-        else:
-            st.success("All registered accounts are currently activated with premium licenses.")
+        if "Paid" in u_df.columns:
+            pending_activation_users = u_df[u_df['Paid'] == False]['Username'].tolist()
+            if pending_activation_users:
+                t_user = st.selectbox("Select Target Account to Unblock Premium Modules:", pending_activation_users)
+                if st.button("Authorize License Token and Grant Access Key", use_container_width=True):
+                    u_df.loc[u_df['Username'] == t_user, 'Paid'] = True
+                    u_df.to_csv(users_file, index=False)
+                    st.success(f"Premium activation sequence complete for account: `{t_user.upper()}`")
+                    st.rerun()
+            else:
+                st.success("All registered accounts are currently activated with premium licenses.")
         st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
@@ -246,9 +265,8 @@ else:
             submit_profile = st.form_submit_button("🔒 LOCK VARIABLES AND EXECUTE AI COACH INITIALIZATION")
             
         if submit_profile:
-            # Sports Science Matrix Calculations
             bmr = (10 * weight) + (6.25 * height) - (5 * age) + (5 if gender == "Male" else -161)
-            tdee = bmr * 1.45 # Moderate Baseline Activity Coefficient
+            tdee = bmr * 1.45
             
             if "Loss" in goal or "Shredded" in goal:
                 cal_target = int(tdee - 500)
@@ -265,7 +283,6 @@ else:
             carbs_target = int((cal_target - ((protein_target * 4) + (fats_target * 9))) / 4)
             target_deadline = date.today() + timedelta(weeks=duration_w)
             
-            # Flush out old user profile instances to maintain clean files
             hp_raw = pd.read_csv(health_profiles_file)
             hp_raw = hp_raw[hp_raw['Username'] != st.session_state.username]
             
@@ -281,7 +298,6 @@ else:
             st.success("🎉 Sports-science variables compiled and locked into database matrices cleanly! Jump to the AI Coach Tab.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # RE-EVALUATE ACCESS RESTRICTIONS FOR CLIENT EXPERIENCES
     hp_df = pd.read_csv(health_profiles_file)
     has_profile = (st.session_state.username in hp_df['Username'].tolist())
     is_premium = user_paid.get(st.session_state.username, False)
@@ -298,7 +314,6 @@ else:
         st.markdown(f"### 🤖 Certified AI Dashboard Workstation")
         st.write(f"**Target Vector:** `{user_profile['Goal']}` | **Calculated Timeline Horizon Target End Date:** `{user_profile['Deadline']}`")
         
-        # Load any existing logs for today
         logs_df = pd.read_csv(daily_logs_file)
         today_str = date.today().strftime("%Y-%m-%d")
         today_logs = logs_df[(logs_df['Date'] == today_str) & (logs_df['Username'] == st.session_state.username)]
@@ -308,7 +323,6 @@ else:
         c_f = int(today_logs['MealFats'].sum()) if not today_logs.empty else 0
         c_cal = int(today_logs['MealCalories'].sum()) if not today_logs.empty else 0
         
-        # Premium HUD Layout Panel
         st.markdown("#### 🔋 Live Daily Energy Balance Status")
         hud_cols = st.columns(4)
         hud_cols[0].markdown(f"<div class='premium-card'><span class='hud-metric-label'>Calories consumed</span><br><span class='hud-metric-val'>{c_cal}</span> <span style='color:#45A29E; font-size:11px;'>/ {user_profile['TargetCalories']} kcal</span></div>", unsafe_allow_html=True)
@@ -319,7 +333,6 @@ else:
         if not is_premium:
             st.warning("🔒 Carbohydrate and Fat tracking grids are locked under Premium Membership. Complete registration below to unblock.")
         
-        # 🚨 AI NOTIFICATION AND REAL-TIME SHORTFALL RECOVERY RECOMMENDATIONS
         st.write("---")
         st.markdown("#### 📢 Automated Coach Intelligence Feedback Logs")
         
@@ -327,11 +340,9 @@ else:
         
         if protein_shortfall > 0:
             st.error(f"⚠️ **MACRONUTRIENT INTAKE DEFICIT DETECTED:** You are currently trailing behind your muscle recovery pace by **{protein_shortfall}g of pure protein** today!")
-            
             st.markdown("##### **💡 Actionable Recovery Options Tailored To Your Profile Preferences:**")
             pref_type = "Veg" if "Veg" in user_profile['DietaryPreference'] else "Non-Veg"
             
-            # Dynamic filter mapping matching dietary boundaries
             matching_rec_foods = [f for f in FOOD_NUTRITION_DATABASE if f['Type'] == pref_type or f['Name'] == "Peanut Butter 🥜"]
             
             rec_cols = st.columns(len(matching_rec_foods[:3]))
@@ -348,11 +359,9 @@ else:
         else:
             st.success("🟢 **OPTIMAL PERFORMANCE RATING:** Target protein intake values satisfied for the day. Keep driving consistency.")
             
-        # 📅 DYNAMIC SCIENTIFIC DAILY TRAINING SPLIT GENERATION ENGINE
         st.write("---")
         st.markdown("#### 🏋️‍♂️ Prescribed Daily Training Split Architecture")
         
-        # Determine tracking split selection automatically using modern calendar date logic
         day_index = datetime.now().weekday()
         split_mapping = {0: "Chest", 1: "Back", 2: "Legs", 3: "Shoulders", 4: "Arms", 5: "Rest Day", 6: "Rest Day"}
         target_group = split_mapping.get(day_index, "Rest Day")
