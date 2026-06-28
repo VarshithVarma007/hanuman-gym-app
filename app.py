@@ -2,468 +2,364 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import altair as alt
-import time
-from datetime import datetime, date, timedelta
 import os
+from datetime import datetime, date, timedelta
 
-# Set page layout configuration to wide for a sweeping dashboard layout
-st.set_page_config(page_title="Hanuman Gym Premium Portal", page_icon="🏋️‍♂️", layout="wide")
+# Page Master Setup
+st.set_page_config(page_title="Hanuman Gym OS", page_icon="🏋️‍♂️", layout="wide")
 
-# 🎨 STEALTH MINIMALIST DESIGN THEME (CUSTOM CSS OVERWRITE)
-stealth_ui_css = """
+# 🎨 CUSTOM STYLING ENGINE FOR NAVIGATION CHIPS AND PREMIUM DESIGN
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
     
-    /* Obsidian Base Background */
     .stApp {
         background-color: #0B0C10 !important;
         color: #C5C6C7 !important;
         font-family: 'Inter', sans-serif;
     }
-    
-    /* Premium Sharp Typography Headers */
     h1, h2, h3, h4 {
         font-family: 'Orbitron', sans-serif !important;
         letter-spacing: 2px;
         color: #FFFFFF !important;
-        text-transform: uppercase;
     }
-    
-    /* Clean Minimal Slate Cards */
     .stealth-card {
         background-color: #1F2833 !important;
         border-radius: 12px !important;
         padding: 24px !important;
         margin-bottom: 20px !important;
         border-left: 4px solid #950740 !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
     }
-    
-    /* Form Input Box Corrections */
-    .stTextInput>div>div>input, .stNumberInput>div>div>input, .stSelectbox>div>div {
-        background-color: #0B0C10 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #45A29E !important;
-        border-radius: 6px !important;
+    /* Square Tile Navigation Styling */
+    .nav-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 12px;
+        margin-bottom: 25px;
     }
-    
-    /* Minimalist Segmented Tabs Bar Layout */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+    .nav-tile {
         background-color: #1F2833;
-        padding: 6px;
-        border-radius: 10px;
+        border: 1px solid #45A29E;
+        border-radius: 8px;
+        padding: 15px 5px;
+        text-align: center;
+        color: #FFFFFF;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        background-color: #0B0C10;
-        border-radius: 6px;
-        color: #C5C6C7;
-        padding: 0px 18px;
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #950740 !important;
-        color: #FFFFFF !important;
+    .nav-tile:hover {
+        background-color: #950740;
+        border-color: #FFFFFF;
     }
 </style>
-"""
-st.markdown(stealth_ui_css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# Live Business Storage File System Definitions
-ledger_file = "metrics_ledger.csv"
-users_file = "users_db.csv"  
-payments_file = "payments_ledger.csv"
+# 💾 SYSTEM STORAGE ROUTINES
+users_file = "users_db.csv"
+workout_logs_file = "user_workout_logs.csv"
+food_logs_file = "user_food_logs.csv"
+pr_ledger_file = "user_pr_ledger.csv"
 
-# Ensure core files exist on launch
-def init_live_storage_files():
+def init_dbs():
     if not os.path.exists(users_file):
-        pd.DataFrame([{"username": "varshith", "password": "admin123", "tier": "Owner"}]).to_csv(users_file, index=False)
-    if not os.path.exists(ledger_file):
-        pd.DataFrame(columns=["Timestamp", "Username", "Bicep (in)", "Chest (in)", "Waist (in)", "Body Fat (%)"]).to_csv(ledger_file, index=False)
-    if not os.path.exists(payments_file):
-        pd.DataFrame([
-            {"Timestamp": "2026-06-01 10:00:00", "Username": "rahul", "Plan": "Quarterly Pack", "Amount": 4000},
-            {"Timestamp": "2026-06-15 14:30:00", "Username": "amit", "Plan": "Starter Pass", "Amount": 1500},
-            {"Timestamp": "2026-06-20 09:15:00", "Username": "vikram", "Plan": "Iron Elite VIP", "Amount": 12000}
-        ]).to_csv(payments_file, index=False)
+        pd.DataFrame([{"username": "varshith", "password": "admin123", "role": "Owner"}]).to_csv(users_file, index=False)
+    if not os.path.exists(workout_logs_file):
+        pd.DataFrame(columns=["Date", "Username", "WorkoutSplit", "Exercise", "SetNumber", "Reps"]).to_csv(workout_logs_file, index=False)
+    if not os.path.exists(food_logs_file):
+        pd.DataFrame(columns=["Date", "Username", "MealPeriod", "FoodItem", "Calories", "Protein", "Carbs", "Fats"]).to_csv(food_logs_file, index=False)
+    if not os.path.exists(pr_ledger_file):
+        pd.DataFrame(columns=["Username", "Exercise", "WeightMax"]).to_csv(pr_ledger_file, index=False)
 
-init_live_storage_files()
+init_dbs()
 
-# 📋 WORKOUT SPLIT SCHEDULER DATA REFERENCE
-workout_splits = {
-    "🔥 Push Day (Chest/Shoulders/Triceps)": [
-        {"Exercise": "Flat Barbell Bench Press", "Sets": "4 Sets", "Reps": "6-8 Reps", "Rest": "120s"},
-        {"Exercise": "Incline Dumbbell Press", "Sets": "3 Sets", "Reps": "8-10 Reps", "Rest": "90s"},
-        {"Exercise": "Seated Overhead Barbell Press", "Sets": "4 Sets", "Reps": "8 Reps", "Rest": "90s"},
-        {"Exercise": "Cable Lateral Raises", "Sets": "4 Sets", "Reps": "12-15 Reps", "Rest": "60s"},
-        {"Exercise": "Overhead Rope Tricep Extensions", "Sets": "3 Sets", "Reps": "10-12 Reps", "Rest": "60s"}
-    ],
-    "⚡ Pull Day (Back/Rear Delts/Biceps)": [
-        {"Exercise": "Conventional Deadlift", "Sets": "3 Sets", "Reps": "5 Reps (Heavy)", "Rest": "150s"},
-        {"Exercise": "Lat Pulldown", "Sets": "4 Sets", "Reps": "8-10 Reps", "Rest": "90s"},
-        {"Exercise": "Barbell Bent-Over Rows", "Sets": "3 Sets", "Reps": "8 Reps", "Rest": "90s"},
-        {"Exercise": "Face Pulls for Rear Delts", "Sets": "4 Sets", "Reps": "15 Reps", "Rest": "60s"},
-        {"Exercise": "Incline Dumbbell Bicep Curls", "Sets": "3 Sets", "Reps": "10-12 Reps", "Rest": "60s"}
-    ],
-    "🦵 Leg Day (Quads/Hamstrings/Calves)": [
-        {"Exercise": "Barbell Back Squat", "Sets": "4 Sets", "Reps": "6-8 Reps", "Rest": "150s"},
-        {"Exercise": "Romanian Deadlifts (RDLs)", "Sets": "3 Sets", "Reps": "10 Reps", "Rest": "90s"},
-        {"Exercise": "Leg Press", "Sets": "3 Sets", "Reps": "12 Reps", "Rest": "90s"},
-        {"Exercise": "Seated Leg Extensions", "Sets": "4 Sets", "Reps": "15 Reps", "Rest": "60s"},
-        {"Exercise": "Standing Calf Raises", "Sets": "4 Sets", "Reps": "20 Reps", "Rest": "45s"}
-    ]
+# 📋 MASTER DATA REGISTRIES
+EXERCISE_DICTIONARY = {
+    "Chest 🔴": ["Bench Press", "Incline Barbell Press", "Dumbbell Flyes", "Cable Crossovers", "Push-ups"],
+    "Back 🍏": ["Deadlift", "Lat Pulldown", "Bent-Over Rows", "Seated Cable Rows", "Pull-ups"],
+    "Legs 🦵": ["Squats", "Leg Press", "Romanian Deadlift", "Leg Extensions", "Calf Raises"],
+    "Shoulders ⚡": ["Overhead Press", "Lateral Raises", "Rear Delt Flyes", "Front Raises"],
+    "Arms 💪": ["Barbell Curls", "Hammer Curls", "Tricep Pushdowns", "Skull Crushers"]
 }
 
-# 🏆 INITIALIZE GLOBAL DATABASE STATE 
-if 'leaderboard_data' not in st.session_state:
-    st.session_state.leaderboard_data = pd.DataFrame([
-        {"Member": "Varshith", "Bench Press (kg)": 100, "Squat (kg)": 140, "Deadlift (kg)": 180, "Total (kg)": 420},
-        {"Member": "Rahul", "Bench Press (kg)": 90, "Squat (kg)": 120, "Deadlift (kg)": 160, "Total (kg)": 370},
-        {"Member": "Amit", "Bench Press (kg)": 110, "Squat (kg)": 130, "Deadlift (kg)": 170, "Total (kg)": 410},
-    ])
+FOOD_DICTIONARY = {
+    "Chicken Breast (100g)": [165, 31, 0, 3],
+    "Whole Eggs (2)": [156, 12, 1, 10],
+    "Egg Whites (4)": [68, 14, 0, 0],
+    "Paneer (100g)": [265, 18, 1, 20],
+    "Soya Chunks (50g)": [170, 26, 16, 0.5],
+    "White Rice (1 Cup cooked)": [200, 4, 45, 0],
+    "Roti/Chapati (1)": [100, 3, 20, 1],
+    "Peanut Butter (2 tbsp)": [190, 7, 6, 16],
+    "Milk (250ml)": [120, 8, 12, 5]
+}
 
-if 'streak_count' not in st.session_state: st.session_state.streak_count = 5
-if 'live_scanned_count' not in st.session_state: st.session_state.live_scanned_count = 35
-if 'user_goal_text' not in st.session_state: st.session_state.user_goal_text = "Pack on dense lean muscle mass!"
-if 'user_goal_deadline' not in st.session_state: st.session_state.user_goal_deadline = date(2026, 8, 31)
-if 'macro_results' not in st.session_state: st.session_state.macro_results = None
-
-def load_users():
-    try:
-        df = pd.read_csv(users_file)
-        return dict(zip(df['username'].astype(str), df['password'].astype(str)))
-    except:
-        return {"varshith": "admin123"}
-
-def save_user(username, password):
-    pd.DataFrame([{"username": username, "password": password, "tier": "Member"}]).to_csv(users_file, mode='a', header=False, index=False)
-
-user_credentials_db = load_users()
-
+# Session State Hooks
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'active_username' not in st.session_state: st.session_state.active_username = None
+if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 HOME"
 
-# 🔒 SECURITY ACCESS LOCK GATEWAY
+# Security Gate
 if not st.session_state.logged_in:
     cols = st.columns([1, 2, 1])
     with cols[1]:
         st.markdown("<div class='stealth-card' style='margin-top: 50px;'>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; color: #FFFFFF;'>⚡ HANUMAN LIVE INTERFACE</h2>", unsafe_allow_html=True)
-        
-        auth_mode = st.radio("Access Tier:", ["Sign In to Account", "Register New Profile"], horizontal=True)
-        u_in = st.text_input("Gym Username Identification").strip().lower()
-        p_in = st.text_input("Security Pass Token", type="password").strip()
-        
-        if auth_mode == "Sign In to Account":
-            if st.button("Unlock Core Dashboard Systems", use_container_width=True):
-                if u_in in user_credentials_db and str(user_credentials_db[u_in]) == p_in:
+        st.markdown("<h2>⚡ HANUMAN CORE DOORWAY</h2>", unsafe_allow_html=True)
+        u_in = st.text_input("Username Identification").strip().lower()
+        p_in = st.text_input("Access Token Key", type="password").strip()
+        if st.button("Authorize Core Access", use_container_width=True):
+            df = pd.read_csv(users_file)
+            if u_in in df['username'].values:
+                saved_pass = df[df['username'] == u_in]['password'].values[0]
+                if str(saved_pass) == p_in:
                     st.session_state.logged_in = True
                     st.session_state.active_username = u_in
                     st.rerun()
-                else: st.error("Access Refused. Invalid credentials signature.")
-        else:
-            if st.button("Generate Account & Login", use_container_width=True):
-                if u_in == "" or p_in == "": st.error("Tokens cannot be initialized blank.")
-                elif u_in in user_credentials_db: st.error("Identification label already claimed.")
-                else:
-                    save_user(u_in, p_in)
-                    st.session_state.logged_in = True
-                    st.session_state.active_username = u_in
-                    st.rerun()
+            st.error("Invalid Signature Key Matrix.")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# 🎛️ MAIN PLATFORM TOP PANEL HEADER BRANDING
-st.markdown(
-    "<div style='text-align: center; padding: 20px 0; border-bottom: 2px dashed rgba(255,255,255,0.1); margin-bottom: 30px;'>"
-    "<h1 style='margin: 0; font-size: 36px; color: #FFFFFF; font-weight: 700;'>🏋️‍♂️ HANUMAN GYM SOFTWARE</h1>"
-    "<p style='margin: 5px 0 0 0; color: #45A29E; font-size: 13px; letter-spacing: 5px; font-weight:bold;'>STEALTH LIVE PRODUCTION SYSTEMS</p>"
-    "</div>", 
-    unsafe_allow_html=True
-)
+# 🎛️ DYNAMIC SQUARE GRID TILES HEADER NAVIGATION
+st.markdown("### 🎛️ CORE MODULE CONTROL INTERFACE")
+nav_cols = st.columns(9)
+tabs_map = {
+    0: "🏠 HOME", 1: "📡 LIVE", 2: "🏋️ WORKOUT", 3: "🥗 NUTRITION", 
+    4: "🤖 AI TRAINER", 5: "📊 PROGRESS", 6: "💳 PAYMENT", 7: "📍 LOCATION", 8: "👤 PROFILE"
+}
+for i, label in tabs_map.items():
+    if nav_cols[i].button(label, use_container_width=True):
+        st.session_state.current_tab = label
+        st.rerun()
 
-# Sidebar Identity Tag
-st.sidebar.markdown(f"### 🚀 Current User: `{st.session_state.active_username.upper()}`")
-if st.sidebar.button("🔒 Terminate Cloud Session", use_container_width=True):
-    st.session_state.logged_in = False
-    st.session_state.active_username = None
-    st.session_state.macro_results = None
-    st.rerun()
+st.write("---")
+current_selection = st.session_state.current_tab
 
-is_owner = (st.session_state.active_username == "varshith")
-
-# Build Tab Horizon matrix layout arrays dynamically
-tab_labels = ["🔴 Live Counter", "📊 Traffic Graphs", "🏆 PR Performance", "⚡ Split Planner", "🍳 Bio-Analytics Engine", "📅 Consistency Matrix", "💳 Pay Station"]
-if is_owner:
-    tab_labels.append("👑 Admin Headquarters")
-
-tabs_list = st.tabs(tab_labels)
-
-# -------------------------------------------------------------
-# TAB 1: LIVE COUNTER
-# -------------------------------------------------------------
-with tabs_list[0]:
+# =========================================================================================
+# 🏠 HOME TAB
+# =========================================================================================
+if current_selection == "🏠 HOME":
     st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("📡 Live Occupancy Metrics")
-    current_headcount = st.session_state.live_scanned_count
+    st.markdown("## 🏠 CHAMPION COMMAND STATION")
+    st.write(f"Welcome back, **{st.session_state.active_username.upper()}**! Here is your automated training operational directive:")
     
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Active Floor Headcount", f"{current_headcount} Members")
-    col2.metric("Floor 1 (Free Weights)", f"{int(current_headcount * 0.55)} People")
-    col3.metric("Floor 2 (Cardio / Legs)", f"{current_headcount - int(current_headcount * 0.55)} People")
+    # AI Bot Automated Split Suggestion System
+    st.markdown("### 🤖 Automated Split Prescription Coach")
+    day_name = datetime.now().strftime("%A")
+    split_suggestions = {
+        "Monday": "🔥 PUSH DAY (Chest/Shoulders/Triceps) — Focus on max force output vectors.",
+        "Tuesday": "⚡ PULL DAY (Back/Rear Delts/Biceps) — Prioritize dynamic row contractions.",
+        "Wednesday": "🦵 LEG DAY (Quads/Hamstrings/Calves) — Focus on absolute mechanical squat depth.",
+        "Thursday": "🔥 PUSH DAY — Focus on dynamic hypertrophy targets.",
+        "Friday": "⚡ PULL DAY — Accentuate deep mechanical width isolation row variations.",
+        "Saturday": "🦵 LEG DAY / ARMS OVERLOAD — Secondary stimulation volume block.",
+        "Sunday": "🧘 ABS & CARDIO CONDITIONING / RECOVERY REST SCHEDULING SYSTEM"
+    }
+    st.info(f"📅 Today is **{day_name}**. Your Coach prescribes: **{split_suggestions.get(day_name)}**")
     
+    # Quick Summary Data Frames
+    st.write("#### Today's Nutritional Baseline Horizon")
+    if os.path.exists(food_logs_file):
+        f_df = pd.read_csv(food_logs_file)
+        today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.active_username)]
+        if not today_f.empty:
+            st.metric("Total Calories Consumed", f"{int(today_f['Calories'].sum())} kcal")
+            st.dataframe(today_f[['MealPeriod', 'FoodItem', 'Calories', 'Protein']], use_container_width=True)
+        else:
+            st.info("No nutritional records synchronized on disk for today yet.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================================================
+# 📡 LIVE TAB
+# =========================================================================================
+elif current_selection == "📡 LIVE":
+    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+    st.markdown("## 📡 LIVE BIOMETRIC OCCUPANCY METRICS")
+    st.metric("Active Floor Headcount", "38 Members Inside")
+    st.write("• **Floor 1 (Strength Core Matrix):** 22 People")
+    st.write("• **Floor 2 (Cardio & Mechanical Legs Array):** 16 People")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================================================
+# 🏋️ WORKOUT TAB
+# =========================================================================================
+elif current_selection == "🏋️ WORKOUT":
+    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+    st.markdown("## 🏋️ USER-CONTROLLED PROGRESSIVE WORKOUT LOG ENGINE")
+    
+    # 1. Select the Target Muscle Architecture Group
+    muscle_group = st.selectbox("1. Choose Target Muscle Architecture:", list(EXERCISE_DICTIONARY.keys()))
+    
+    # 2. Select Exercise from Dictionary Array
+    exercise_selected = st.selectbox("2. Choose Performed Movement Node:", EXERCISE_DICTIONARY[muscle_group])
+    
+    # 3. Dynamic Manual Sets Logging Configuration Form
+    num_sets = st.number_input("3. Number of Sets Completed", min_value=1, max_value=10, value=3)
+    
+    st.write("#### 4. Specify Repetitions Executed Across Individual Sets Matrix:")
+    logged_sets = []
+    set_cols = st.columns(int(num_sets))
+    for s in range(int(num_sets)):
+        reps_done = set_cols.number_input(f"Set {s+1} Reps:", min_value=0, max_value=100, value=10, key=f"reps_s_{s}")
+        logged_sets.append(reps_done)
+        
+    if st.button("🔒 SYNC WORKOUT SNAPSHOT LOGS TO DATA MATRIX DISK", use_container_width=True):
+        timestamp_str = date.today().strftime("%Y-%m-%d")
+        new_logs_list = []
+        for s_idx, r_val in enumerate(logged_sets):
+            new_logs_list.append({
+                "Date": timestamp_str, "Username": st.session_state.active_username,
+                "WorkoutSplit": muscle_group, "Exercise": exercise_selected, "SetNumber": s_idx + 1, "Reps": r_val
+            })
+        pd.DataFrame(new_logs_list).to_csv(workout_logs_file, mode='a', header=False, index=False)
+        st.success(f"Successfully recorded performance tracks for `{exercise_selected}` onto system storage database.")
+        
     st.write("---")
-    if current_headcount > 55: st.error(f"🔴 **HEAVY PEAK RUSH:** Capacity at high density load.")
-    elif current_headcount > 25: st.warning(f"🟡 **MODERATE LOAD:** Standard training environment active.")
-    else: st.success(f"🟢 **PEACEFUL ZONE:** Gym floor is clear. Ideal opportunity to train!")
+    st.write("### 📅 Today's Completed Training Logs")
+    if os.path.exists(workout_logs_file):
+        w_df = pd.read_csv(workout_logs_file)
+        today_w = w_df[(w_df['Date'] == date.today().strftime("%Y-%m-%d")) & (w_df['Username'] == st.session_state.active_username)]
+        st.dataframe(today_w, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -------------------------------------------------------------
-# TAB 2: TRAFFIC GRAPHS
-# -------------------------------------------------------------
-with tabs_list[1]:
+# =========================================================================================
+# 🥗 NUTRITION TAB
+# =========================================================================================
+elif current_selection == "🥗 NUTRITION":
     st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("📈 Chronological Crowd Analytics")
-    selected_day = st.selectbox("Choose Targeted Baseline Horizon", ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-    if selected_day == 'Sunday':
-        st.error("🔒 Sunday is official recovery rest day allocation.")
-    else:
-        hours = list(range(5, 22))
-        crowd_estimates = [0 if 10 <= h < 17 else (65 + np.random.randint(-10, 10) if h in [7, 8, 18, 19] else 18 + np.random.randint(-4, 8)) for h in hours]
-        chart_data = pd.DataFrame({'Time (24h Scale)': [f"{h}:00" for h in hours], 'Estimated Density': crowd_estimates})
-        chart = alt.Chart(chart_data).mark_area(
-            color=alt.Gradient(gradient='linear', stops=[alt.GradientStop(color='#45A29E', offset=0), alt.GradientStop(color='#0B0C10', offset=1)])
-        ).encode(x=alt.X('Time (24h Scale):O', sort=None), y=alt.Y('Estimated Density:Q', title="Active Density Headcount"))
-        st.altair_chart(chart, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# -------------------------------------------------------------
-# TAB 3: PR PERFORMANCE
-# -------------------------------------------------------------
-with tabs_list[2]:
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("🏆 Compound Lift Performance Analytics")
-    col1, col2 = st.columns(2)
-    with col1:
-        new_name = st.text_input("Competitor Name", value=st.session_state.active_username)
-        bp_lift = st.number_input("1-Rep Max Bench Press (kg)", value=70)
-    with col2:
-        sq_lift = st.number_input("1-Rep Max Back Squat (kg)", value=90)
-        dl_lift = st.number_input("1-Rep Max Conventional Deadlift (kg)", value=110)
-        
-    if st.button("Verify & Log Max Lift Payload", use_container_width=True):
-        if new_name.strip() != "":
-            total_lift = bp_lift + sq_lift + dl_lift
-            new_entry = pd.DataFrame([{"Member": new_name, "Bench Press (kg)": bp_lift, "Squat (kg)": sq_lift, "Deadlift (kg)": dl_lift, "Total (kg)": total_lift}])
-            st.session_state.leaderboard_data = pd.concat([st.session_state.leaderboard_data, new_entry], ignore_index=True)
-            st.success("Compound parameters saved successfully to leaderboard matrix array!")
-            st.rerun()
-
-    st.write("### 🥇 Heavy Hitter Live Standings")
-    sorted_board = st.session_state.leaderboard_data.sort_values(by="Total (kg)", ascending=False).reset_index(drop=True)
-    sorted_board.index = sorted_board.index + 1
-    st.dataframe(sorted_board, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# -------------------------------------------------------------
-# TAB 4: INTERACTIVE SPLIT PLANNER
-# -------------------------------------------------------------
-with tabs_list[3]:
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("⚡ Hypertrophy Training Split Matrix")
-    chosen_split = st.selectbox("Choose Target Routine Block", list(workout_splits.keys()))
-    st.table(pd.DataFrame(workout_splits[chosen_split]))
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# -------------------------------------------------------------
-# TAB 5: BIO-ANALYTICS ENGINE
-# -------------------------------------------------------------
-with tabs_list[4]:
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("🍳 TDEE & ATHLETIC CALCULATOR PORTAL")
+    st.markdown("## 🥗 ADVANCED PERIODIZED INTAKE ENGINE")
     
-    with st.form(key="biometrics_input_form"):
-        goal_mode = st.radio("SELECT ATHLETIC TARGET VECTOR:", ["🔥 Fat Loss", "⚖️ Body Recomposition", "💪 Muscle Gain (Bulk)"], horizontal=True)
-        st.write("---")
-        col_input1, col_input2, col_input3 = st.columns(3)
+    # 1. Structural Separation Into Designated Meal Slots
+    meal_slot = st.radio("Choose Targeted Meal Period Horizon Placement:", ["Breakfast 🍳", "Lunch 🍚", "Snacks 🥜", "Dinner 🥩"], horizontal=True)
+    
+    # 2. Food Resource Select Profile
+    selected_food = st.selectbox("Choose Consumed Resource Core Node:", list(FOOD_DICTIONARY.keys()))
+    serving_grams_multiplier = st.number_input("Serving Size Scale Factor Coefficient (1.0 = Standard 100g/Portion):", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
+    
+    if st.button("Commit Portion Log Entry to System Queue", use_container_width=True):
+        base_macros = FOOD_DICTIONARY[selected_food]
+        cal_calc = int(base_macros[0] * serving_grams_multiplier)
+        prot_calc = round(base_macros[1] * serving_grams_multiplier, 1)
+        carb_calc = round(base_macros[2] * serving_grams_multiplier, 1)
+        fat_calc = round(base_macros[3] * serving_grams_multiplier, 1)
         
-        with col_input1:
-            weight_kg = st.number_input("Current Weight (kg):", min_value=30.0, max_value=200.0, value=75.0, step=0.1)
-            height_unit = st.selectbox("Height Format:", ["Centimeters (cm)", "Feet + Inches"])
-            f_col, i_col = st.columns(2)
-            ft = f_col.number_input("Feet:", min_value=3, max_value=8, value=5)
-            inch = i_col.number_input("Inches:", min_value=0, max_value=11, value=9)
-            height_cm_input = st.number_input("Height explicitly if cm selected:", min_value=100.0, max_value=250.0, value=175.0, step=0.1)
-            
-        with col_input2:
-            age_years = st.number_input("Age (Years):", min_value=10, max_value=100, value=21)
-            gender_type = st.selectbox("Gender Profile:", ["Male", "Female"])
-            body_fat_pct = st.number_input("Body Fat Matrix (%):", min_value=3.0, max_value=50.0, value=16.0, step=0.1)
-            
-        with col_input3:
-            training_days_w = st.number_input("Weekly Training Frequency (0-7 Days):", min_value=0, max_value=7, value=4)
-            intensity_tier = st.selectbox("Intensity Threshold Scale:", ["Beginner", "Light", "Moderate", "Intense", "Athlete"], index=2)
-            target_weight_kg = st.number_input("Target Weight Objective (kg):", min_value=30.0, max_value=200.0, value=70.0)
-            rate_speed = st.selectbox("Target Adjustment Speed Scale (kg/Week):", [0.25, 0.50, 0.75, 1.00], index=1)
-
-        st.write("---")
-        submit_btn = st.form_submit_button("🚀 EXECUTE MATHEMATICAL METRICS PAYLOAD", use_container_width=True)
-
-    if submit_btn:
-        final_height = height_cm_input if height_unit == "Centimeters (cm)" else ((ft * 30.48) + (inch * 2.54))
-        lean_body_mass_kg = round(weight_kg * (1 - (body_fat_pct / 100)), 1)
-        bmr_calc = (10 * weight_kg) + (6.25 * final_height) - (5 * age_years) + (5 if gender_type == "Male" else -161)
-        activity_factors = {"Beginner": 1.2, "Light": 1.375, "Moderate": 1.55, "Intense": 1.725, "Athlete": 1.9}
-        tdee_calc = bmr_calc * (activity_factors[intensity_tier] + ((training_days_w - 3) * 0.025))
+        new_food_row = pd.DataFrame([{
+            "Date": date.today().strftime("%Y-%m-%d"), "Username": st.session_state.active_username,
+            "MealPeriod": meal_slot, "FoodItem": selected_food, "Calories": cal_calc,
+            "Protein": prot_calc, "Carbs": carb_calc, "Fats": fat_calc
+        }])
+        new_food_row.to_csv(food_logs_file, mode='a', header=False, index=False)
+        st.success(f"Tracked {selected_food} within the `{meal_slot}` bracket database matrix layout successfully.")
         
-        adjusted_speed = 0.0 if "Body Recomposition" in goal_mode else rate_speed
-        final_target_weight = weight_kg if "Body Recomposition" in goal_mode else target_weight_kg
+    st.write("---")
+    st.markdown("### 📊 PERIODIZED MEAL TRACKING METRICS LAYER")
+    
+    if os.path.exists(food_logs_file):
+        f_df = pd.read_csv(food_logs_file)
+        user_today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.active_username)]
         
-        if "Fat Loss" in goal_mode: daily_calorie_target = max(1200, int(tdee_calc - (adjusted_speed * 1100)))
-        elif "Muscle Gain" in goal_mode: daily_calorie_target = int(tdee_calc + (adjusted_speed * 550))
-        else: daily_calorie_target = int(tdee_calc - 150)
-
-        protein_per_kg = 2.4 if "Fat Loss" in goal_mode else (2.2 if "Body Recomposition" in goal_mode else 2.0)
-        req_protein_g = int(weight_kg * protein_per_kg)
-        req_fat_g = int((daily_calorie_target * 0.25) / 9)
-        req_carbs_g = int(max(30, (daily_calorie_target - ((req_protein_g * 4) + (req_fat_g * 9))) / 4))
-        base_water_liters = (weight_kg * 0.033) + (training_days_w * 0.35)
-        computed_bmi = round(weight_kg / ((final_height / 100.0) ** 2), 1)
-        weight_delta_abs = abs(final_target_weight - weight_kg)
-        weeks_to_destination = int(np.ceil(weight_delta_abs / adjusted_speed)) if adjusted_speed > 0 else 12
-        projected_completion_date = date.today() + timedelta(weeks=weeks_to_destination)
-
-        st.session_state.macro_results = {
-            "weight_kg": weight_kg, "target_weight_kg": final_target_weight, "rate_speed": adjusted_speed, "goal_mode": goal_mode,
-            "daily_calorie_target": daily_calorie_target, "tdee_calc": int(tdee_calc), "req_protein_g": req_protein_g,
-            "req_carbs_g": req_carbs_g, "req_fat_g": req_fat_g, "base_water_liters": base_water_liters, "computed_bmi": computed_bmi,
-            "lean_body_mass_kg": lean_body_mass_kg, "weight_delta_abs": weight_delta_abs, "weeks_to_destination": weeks_to_destination,
-            "projected_completion_date": projected_completion_date, "body_fat_pct": body_fat_pct
-        }
-
-    if st.session_state.macro_results is not None:
-        res = st.session_state.macro_results
+        # Displaying segregated targets slots to user before absolute consolidation summing
+        meal_periods_list = ["Breakfast 🍳", "Lunch 🍚", "Snacks 🥜", "Dinner 🥩"]
+        p_cols = st.columns(4)
+        for idx, period in enumerate(meal_periods_list):
+            period_data = user_today_f[user_today_f['MealPeriod'] == period]
+            p_cols[idx].markdown(f"**{period} Logs:**")
+            if not period_data.empty:
+                for f_idx, row in period_data.iterrows():
+                    p_cols[idx].markdown(f"• {row['FoodItem']} (`{int(row['Calories'])} kcal`)")
+            else:
+                p_cols[idx].write("<span style='color:gray; font-size:11px;'>No item entries</span>", unsafe_allow_html=True)
+                
+        # 📈 TOTAL INTAKE CONSOLIDATED PROGRESS REGISTRY HUB PANEL
         st.write("---")
-        st.markdown("### 📊 SYSTEM TARGET DIAGNOSTICS")
+        st.markdown("#### **🔥 Total Consolidated Intake Progression Matrix**")
+        total_cal = user_today_f['Calories'].sum()
+        total_prot = user_today_f['Protein'].sum()
+        total_carb = user_today_f['Carbs'].sum()
+        total_fat = user_today_f['Fats'].sum()
         
-        st.markdown("<p style='color: #45A29E; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;'>🔋 DAILY NUTRITIONAL REQUIREMENTS</p>", unsafe_allow_html=True)
-        num_cols = st.columns(5)
-        num_cols[0].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(69, 162, 158, 0.2); border-top: 3px solid #45A29E; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Calories Target</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['daily_calorie_target']} <span style='font-size: 12px; color: #45A29E;'>kcal</span></div><div style='font-size: 10px; color: #888888; margin-top: 4px;'>TDEE: {res['tdee_calc']}</div></div>", unsafe_allow_html=True)
-        num_cols[1].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(69, 162, 158, 0.2); border-top: 3px solid #45A29E; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Protein Intake</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['req_protein_g']} <span style='font-size: 12px; color: #45A29E;'>g</span></div><div style='font-size: 10px; color: #00E676; margin-top: 4px;'>LBM Preservation</div></div>", unsafe_allow_html=True)
-        num_cols[2].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(69, 162, 158, 0.2); border-top: 3px solid #45A29E; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Carbohydrates</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['req_carbs_g']} <span style='font-size: 12px; color: #45A29E;'>g</span></div><div style='font-size: 10px; color: #888888; margin-top: 4px;'>Glycogen Fuel</div></div>", unsafe_allow_html=True)
-        num_cols[3].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(69, 162, 158, 0.2); border-top: 3px solid #45A29E; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Fats Allocation</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['req_fat_g']} <span style='font-size: 12px; color: #45A29E;'>g</span></div><div style='font-size: 10px; color: #888888; margin-top: 4px;'>Hormonal Base</div></div>", unsafe_allow_html=True)
-        num_cols[4].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(69, 162, 158, 0.2); border-top: 3px solid #45A29E; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Water Schedule</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{round(res['base_water_liters'], 1)} <span style='font-size: 12px; color: #45A29E;'>L</span></div><div style='font-size: 10px; color: #29B6F6; margin-top: 4px;'>Optimal Hydration</div></div>", unsafe_allow_html=True)
-
-        st.write("") 
-        st.markdown("<p style='color: #950740; font-weight: bold; letter-spacing: 1px; margin-bottom: 5px;'>🩺 BIOLOGICAL & TIMELINE METRICS</p>", unsafe_allow_html=True)
-        bio_cols = st.columns(5)
-        bio_cols[0].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(149, 7, 64, 0.2); border-top: 3px solid #950740; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Calculated BMI</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['computed_bmi']}</div><div style='font-size: 10px; color: #888888; margin-top: 4px;'>Body Mass Index</div></div>", unsafe_allow_html=True)
-        bio_cols[1].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(149, 7, 64, 0.2); border-top: 3px solid #950740; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Lean Body Mass</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['lean_body_mass_kg']} <span style='font-size: 12px; color: #950740;'>kg</span></div><div style='font-size: 10px; color: #888888; margin-top: 4px;'>Pure Muscle Frame</div></div>", unsafe_allow_html=True)
-        bio_cols[2].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(149, 7, 64, 0.2); border-top: 3px solid #950740; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Weight Delta</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{round(res['weight_delta_abs'], 1)} <span style='font-size: 12px; color: #950740;'>kg</span></div><div style='font-size: 10px; color: #FF4500; margin-top: 4px;'>Total Change</div></div>", unsafe_allow_html=True)
-        bio_cols[3].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(149, 7, 64, 0.2); border-top: 3px solid #950740; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Timeline Target</div><div style='font-size: 22px; font-weight: 700; color: #FFFFFF; font-family: Orbitron;'>{res['weeks_to_destination']} <span style='font-size: 12px; color: #950740;'>Wks</span></div><div style='font-size: 10px; color: #888888; margin-top: 4px;'>Required Duration</div></div>", unsafe_allow_html=True)
-        bio_cols[4].markdown(f"<div style='background: #0B0C10; border: 1px solid rgba(149, 7, 64, 0.2); border-top: 3px solid #950740; padding: 15px; border-radius: 8px; text-align: center;'><div style='font-size: 10px; color: #888888; text-transform: uppercase;'>Completion Date</div><div style='font-size: 14px; font-weight: 700; color: #FFFFFF; font-family: Orbitron; margin-top: 8px;'>{res['projected_completion_date'].strftime('%b %d, %Y')}</div><div style='font-size: 10px; color: #00E676; margin-top: 8px;'>Estimated Horizon</div></div>", unsafe_allow_html=True)
-
-        st.write("---")
-        graph_col1, graph_col2 = st.columns([1, 1])
-        with graph_col1:
-            st.markdown("<p style='text-align:center; font-weight:bold;'>🍩 Macronutrient Energy Split Matrix</p>", unsafe_allow_html=True)
-            macro_chart_df = pd.DataFrame({"Macro Source": ["Protein 🥩", "Carbs 🍚", "Fats 🥑"], "Caloric Value": [res['req_protein_g'] * 4, res['req_carbs_g'] * 4, res['req_fat_g'] * 9]})
-            donut_chart = alt.Chart(macro_chart_df).mark_arc(innerRadius=50).encode(theta=alt.Theta(field="Caloric Value", type="quantitative"), color=alt.Color(field="Macro Source", type="nominal", scale=alt.Scale(domain=["Protein 🥩", "Carbs 🍚", "Fats 🥑"], range=["#950740", "#45A29E", "#1F2833"])), tooltip=["Macro Source", "Caloric Value"]).properties(height=220)
-            st.altair_chart(donut_chart, use_container_width=True)
-        with graph_col2:
-            st.markdown("<p style='text-align:center; font-weight:bold;'>📈 Chronological Trajectory Forecast</p>", unsafe_allow_html=True)
-            timeline_weeks_list = list(range(res['weeks_to_destination'] + 1))
-            weight_progression_trajectory = [res['weight_kg'] - (w * res['rate_speed']) if "Fat Loss" in res['goal_mode'] else (res['weight_kg'] + (w * res['rate_speed']) if "Muscle Gain" in res['goal_mode'] else res['weight_kg']) for w in timeline_weeks_list]
-            forecast_chart = alt.Chart(pd.DataFrame({"Weeks": timeline_weeks_list, "Projected Weight (kg)": weight_progression_trajectory})).mark_line(point=True, color='#45A29E').encode(x=alt.X("Weeks:O", title="Timeline Weeks Horizon"), y=alt.Y("Projected Weight (kg):Q", title="Weight Profile", scale=alt.Scale(domain=[min(weight_progression_trajectory)-2, max(weight_progression_trajectory)+2]))).properties(height=220)
-            st.altair_chart(forecast_chart, use_container_width=True)
+        hud_c1, hud_c2, hud_c3, hud_c4 = st.columns(4)
+        hud_c1.metric("Total Energy Pool Logged", f"{int(total_cal)} / 2500 kcal")
+        hud_c2.metric("Total Active Protein Sub-Matrix", f"{int(total_prot)} / 160 g")
+        hud_c3.metric("Total Active Carbohydrates", f"{int(total_carb)} / 250 g")
+        hud_c4.metric("Total Lipids/Fats Allocation", f"{int(total_fat)} / 70 g")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -------------------------------------------------------------
-# TAB 6: CONSISTENCY MATRIX
-# -------------------------------------------------------------
-with tabs_list[5]:
+# =========================================================================================
+# 🤖 AI TRAINER TAB
+# =========================================================================================
+elif current_selection == "🤖 AI TRAINER":
     st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("📅 Tactical Timeline Tracking Engine")
-    days_left = (st.session_state.user_goal_deadline - date.today()).days
-    st.info(f"🎯 Pinned Target Block active across session horizons. Allocation Buffer: {days_left} Days.")
-    sc1, sc2 = st.columns(2)
-    sc1.metric("🔥 Attendance Streak Logs", f"{st.session_state.streak_count} Training Days")
-    if sc2.button("💪 Log Attendance Session", use_container_width=True):
-        st.session_state.streak_count += 1
+    st.markdown("## 🤖 CORE ARTIFICIAL PERSONAL ASSISTANT WORKSTATION")
+    st.write("Ask your Coach anything about sports-science, meal replacements, or technique adjustments.")
+    user_query_input = st.text_input("Enter question terminal cue script block:")
+    if st.button("Fire Query Tracking Node Pipeline", use_container_width=True):
+        if user_query_input.strip() != "":
+            st.info(f"**Coach Hanuman AI Response Configuration Output Engine:**\n\nTo optimize your strategy right now, ensure you are tracking your reps accurately across your sets layer inside the workout engine tab. Keep your protein floor above 2.0g per kg of total mass to secure long-term physical recovery balances, bro!")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================================================
+# 📊 PROGRESS TAB
+# =========================================================================================
+elif current_selection == "📊 PROGRESS":
+    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+    st.markdown("## 📊 MASTER STRENGTH PERFORMANCE REGISTER")
+    st.write("No automation templates here. Select any gym movement vector, input your figures, and compile your historical PR registry manually.")
+    
+    # 1. Compile Global Gym Exercises Registry Array Dropdown List options safely
+    all_possible_gym_movements_list = []
+    for exercise_group in EXERCISE_DICTIONARY.values():
+        all_possible_gym_movements_list.extend(exercise_group)
+        
+    # Manual PR Select fields
+    pr_ex = st.selectbox("Select Target Exercise Asset Node:", sorted(list(set(all_possible_gym_movements_list))))
+    pr_wt = st.number_input("Absolute Top Working Weight Payload Verified (kg):", min_value=1, max_value=500, value=80)
+    
+    if st.button("🔒 Lock Performance Metric into Personal Record Registry Ledger", use_container_width=True):
+        pr_df = pd.read_csv(pr_ledger_file)
+        # Clear duplicate movement records for user profiles to keep file clean
+        pr_df = pr_df[~((pr_df['Username'] == st.session_state.active_username) & (pr_df['Exercise'] == pr_ex))]
+        new_pr_row = pd.DataFrame([{"Username": st.session_state.active_username, "Exercise": pr_ex, "WeightMax": pr_wt}])
+        pd.concat([pr_df, new_pr_row], ignore_index=True).to_csv(pr_ledger_file, index=False)
+        st.success(f"Personal Record array profile updated successfully for `{pr_ex}`!")
         st.rerun()
         
     st.write("---")
-    st.write("### 🩻 Digital Body Measurements Logging Matrix")
-    m1, m2 = st.columns(2)
-    with m1:
-        bi = st.number_input("Bicep Diameter (in)", value=14.0, key="bi_m")
-        ch = st.number_input("Chest Circumference (in)", value=38.0, key="ch_m")
-    with m2:
-        wa = st.number_input("Waist Line Axis (in)", value=32.0, key="wa_m")
-        bf = st.number_input("Estimated Body Fat Ratio (%)", value=15, key="bf_m")
-        
-    if st.button("Sync Metrics Arrays to Local CSV Disk File Layer", use_container_width=True, key="save_m"):
-        new_df = pd.DataFrame([{"Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Bicep (in)": bi, "Chest (in)": ch, "Waist (in)": wa, "Body Fat (%)": bf}])
-        new_df.to_csv(ledger_file, index=False) if not os.path.exists(ledger_file) else new_df.to_csv(ledger_file, mode='a', header=False, index=False)
-        st.success("Telemetry payload synced successfully to server disk.")
+    st.write("#### 🏆 My Verified Heavy Hitter Standing PR Ledger Matrix")
+    if os.path.exists(pr_ledger_file):
+        display_pr_df = pd.read_csv(pr_ledger_file)
+        user_prs = display_pr_df[display_pr_df['Username'] == st.session_state.active_username].reset_index(drop=True)
+        st.dataframe(user_prs[['Exercise', 'WeightMax']], use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -------------------------------------------------------------
-# TAB 7: PAY STATION
-# -------------------------------------------------------------
-with tabs_list[6]:
+# =========================================================================================
+# 💳 PAYMENT TAB
+# =========================================================================================
+elif current_selection == "💳 PAYMENT":
     st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.subheader("💳 Membership Node Transaction Gateway")
-    p1, p2, p3 = st.columns(3)
-    p1.button("💪 Starter Pass\n\n ₹1,500 / Month", key="p_m1")
-    p2.button("🔥 Quarterly Pack\n\n ₹4,000 / 3 Months", key="p_m2")
-    p3.button("👑 Iron Elite VIP\n\n ₹12,000 / Year", key="p_m3")
-    st.write("---")
-    pay_col1, pay_col2 = st.columns([1, 1])
-    with pay_col1:
-        st.markdown("#### **UPI Clearing Instructions**")
-        st.write("1. Open standard financial applications (GPay, PhonePe, Paytm).\n2. Initiate camera node scan on the right merchant placeholder frame.\n3. Input the exact matching package billing fee and confirm validation.")
-    with pay_col2:
-        qr_html = """
-        <div style='border: 3px solid #950740; padding: 25px; border-radius: 12px; background-color: #ffffff; text-align: center; width: 220px; margin: auto;'>
-            <h4 style='color: #111111; margin-top: 0; font-family: sans-serif; letter-spacing:1px;'>HANUMAN GYM MERCH</h4>
-            <div style='background-color: #1a1a1a; width: 160px; height: 160px; margin: auto; border-radius: 8px; display: flex; align-items: center; justify-content: center;'>
-                <span style='color: #45A29E; font-size: 11px; font-weight: bold; font-family: monospace;'>[ GATEWAY VALID ]</span>
-            </div>
-            <p style='color: #333333; font-size: 11px; margin-bottom: 0; font-weight: bold; margin-top: 10px; font-family: monospace;'>UPI: hanumangym@ybl</p>
-        </div>
-        """
-        st.markdown(qr_html, unsafe_allow_html=True)
+    st.markdown("## 💳 PREMIUM PROCESSING CONTROL EDGE WALLET")
+    p_cols = st.columns(3)
+    p_cols[0].button("💪 Starter Pass\n\n ₹1,500 / Month", use_container_width=True, key="p1")
+    p_cols[1].button("🔥 Quarterly Pack\n\n ₹4,000 / 3 Months", use_container_width=True, key="p2")
+    p_cols[2].button("👑 Iron Elite VIP\n\n ₹12,000 / Year", use_container_width=True, key="p3")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -------------------------------------------------------------
-# TAB 8: 👑 ADMIN HEADQUARTERS
-# -------------------------------------------------------------
-if is_owner:
-    with tabs_list[7]:
-        st.markdown("<div class='stealth-card' style='border-left-color: #45A29E !important;'>", unsafe_allow_html=True)
-        st.markdown("## 👑 MASTER CONTROL ADMINISTRATIVE STATION")
-        
-        # 💰 FINANCIAL ANALYSIS SECTION
-        st.markdown("### 💰 Financial Liquidity Ledgers")
-        if os.path.exists(payments_file):
-            pay_df = pd.read_csv(payments_file)
-            total_gross_revenue = pay_df['Amount'].sum()
-            total_transactions = len(pay_df)
-            
-            f_col1, f_col2, f_col3 = st.columns(3)
-            f_col1.metric("Gross Collected Revenue", f"₹ {total_gross_revenue:,}")
-            f_col2.metric("Settled Invoices", f"{total_transactions} Orders")
-            f_col3.metric("Average Ticket Value", f"₹ {int(total_gross_revenue / max(1, total_transactions)):,}")
-            
-            with st.expander("📝 View Global Financial Transaction Stream Ledger"):
-                st.dataframe(pay_df, use_container_width=True)
-        
-        st.write("---")
-        
-        # 📡 DIRECT INFRASTRUCTURE OVERWRITE CONTROL PANEL
-        st.markdown("### 📡 Hardware Stream Multi-Overwrites")
-        st.session_state.live_scanned_count = st.slider("🔧 Manual Override Facility Attendance Counters:", 0, 150, int(st.session_state.live_scanned_count))
-        st.success(f"Headcount threshold locked at: {st.session_state.live_scanned_count} people inside facility boundaries.")
-        st.markdown("</div>", unsafe_allow_html=True)
+# =========================================================================================
+# 📍 LOCATION TAB
+# =========================================================================================
+elif current_selection == "📍 LOCATION":
+    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+    st.markdown("## 📍 JAI HANUMAN FACILITY BOUNDARIES MAP NODE")
+    st.write("• **Central Operational Center Branch:** Emmiganur, Andhra Pradesh, India.")
+    st.write("• **Facility Status:** Fully Open Infrastructure Active (05:00 AM - 10:00 PM Scale Windows).")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================================================
+# 👤 PROFILE TAB
+# =========================================================================================
+elif current_selection == "👤 PROFILE":
+    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+    st.markdown("## 👤 SECURITY PROFILE PARAMETERS IDENTIFICATION")
+    st.write(f"Identity Handle Node Checked: `{st.session_state.active_username.upper()}`")
+    st.write("License Class Level: Active Premium Athlete Strata Tier.")
+    st.markdown("</div>", unsafe_allow_html=True)
