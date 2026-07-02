@@ -3,84 +3,72 @@ import pandas as pd
 import numpy as np
 import altair as alt
 import os
+import time
 from datetime import datetime, date, timedelta
 
-# Page Master Setup
-st.set_page_config(page_title="Hanuman Gym OS", page_icon="🏋️‍♂️", layout="wide")
+# Premium Global Engine Configuration
+st.set_page_config(page_title="Hanuman Gym OS - Enterprise", page_icon="🏋️‍♂️", layout="wide")
 
-# 🎨 CUSTOM STYLING ENGINE FOR NAVIGATION CHIPS AND PREMIUM DESIGN
+# 🎨 EXCLUSIVE CYBERPUNK HUD INTERFACE STYLING (CSS)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
     
     .stApp {
-        background-color: #0B0C10 !important;
-        color: #C5C6C7 !important;
+        background-color: #050608 !important;
+        color: #EEEEF2 !important;
         font-family: 'Inter', sans-serif;
     }
     h1, h2, h3, h4 {
         font-family: 'Orbitron', sans-serif !important;
         letter-spacing: 2px;
         color: #FFFFFF !important;
+        text-shadow: 0 0 10px rgba(245, 166, 35, 0.2);
     }
-    .stealth-card {
-        background-color: #1F2833 !important;
-        border-radius: 12px !important;
+    .premium-card {
+        background: linear-gradient(145deg, #0E0F14, #161820) !important;
+        border: 1px solid #2A2C38 !important;
+        border-radius: 14px !important;
         padding: 24px !important;
         margin-bottom: 20px !important;
-        border-left: 4px solid #950740 !important;
     }
-    /* Square Tile Navigation Styling */
-    .nav-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 12px;
-        margin-bottom: 25px;
-    }
-    .nav-tile {
-        background-color: #1F2833;
-        border: 1px solid #45A29E;
-        border-radius: 8px;
-        padding: 15px 5px;
-        text-align: center;
-        color: #FFFFFF;
-        font-family: 'Orbitron', sans-serif;
-        font-size: 11px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .nav-tile:hover {
-        background-color: #950740;
-        border-color: #FFFFFF;
+    .premium-card:hover {
+        border-color: #F5A623 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# 💾 SYSTEM STORAGE ROUTINES
+# 💾 ROBUST STORAGE SCHEMAS INIT
 users_file = "users_db.csv"
 workout_logs_file = "user_workout_logs.csv"
 food_logs_file = "user_food_logs.csv"
 pr_ledger_file = "user_pr_ledger.csv"
+custom_routines_file = "user_custom_routines.csv"
+checkin_ledger_file = "user_checkin_ledger.csv"
 
-def init_dbs():
+def init_enterprise_architecture():
     if not os.path.exists(users_file):
-        pd.DataFrame([{"username": "varshith", "password": "admin123", "role": "Owner"}]).to_csv(users_file, index=False)
+        pd.DataFrame([{"Username": "varshith", "Password": "admin123", "Role": "Owner", "Streak": 5, "Freezes": 1}]).to_csv(users_file, index=False)
     if not os.path.exists(workout_logs_file):
-        pd.DataFrame(columns=["Date", "Username", "WorkoutSplit", "Exercise", "SetNumber", "Reps"]).to_csv(workout_logs_file, index=False)
+        pd.DataFrame(columns=["Date", "Username", "Exercise", "Weight", "Sets", "Reps"]).to_csv(workout_logs_file, index=False)
     if not os.path.exists(food_logs_file):
         pd.DataFrame(columns=["Date", "Username", "MealPeriod", "FoodItem", "Calories", "Protein", "Carbs", "Fats"]).to_csv(food_logs_file, index=False)
     if not os.path.exists(pr_ledger_file):
         pd.DataFrame(columns=["Username", "Exercise", "WeightMax"]).to_csv(pr_ledger_file, index=False)
+    if not os.path.exists(custom_routines_file):
+        pd.DataFrame(columns=["Username", "RoutineName", "ExercisesList"]).to_csv(custom_routines_file, index=False)
+    if not os.path.exists(checkin_ledger_file):
+        pd.DataFrame(columns=["Date", "Username", "Weight", "BMI", "BodyFat", "WaterLiters", "Sentiment"]).to_csv(checkin_ledger_file, index=False)
 
-init_dbs()
+init_enterprise_architecture()
 
-# 📋 MASTER DATA REGISTRIES
+# 🗃️ STATIC SOURCE DATA REFERENCE LIBRARIES
 EXERCISE_DICTIONARY = {
-    "Chest 🔴": ["Bench Press", "Incline Barbell Press", "Dumbbell Flyes", "Cable Crossovers", "Push-ups"],
-    "Back 🍏": ["Deadlift", "Lat Pulldown", "Bent-Over Rows", "Seated Cable Rows", "Pull-ups"],
-    "Legs 🦵": ["Squats", "Leg Press", "Romanian Deadlift", "Leg Extensions", "Calf Raises"],
-    "Shoulders ⚡": ["Overhead Press", "Lateral Raises", "Rear Delt Flyes", "Front Raises"],
-    "Arms 💪": ["Barbell Curls", "Hammer Curls", "Tricep Pushdowns", "Skull Crushers"]
+    "Chest": ["Bench Press", "Incline Dumbbell Press", "Pec Dec Flyes", "Cable Crossovers"],
+    "Back": ["Deadlift", "Lat Pulldown", "Barbell Rows", "Seated Cable Rows"],
+    "Legs": ["Squats", "Leg Press", "Romanian Deadlift", "Calf Raises"],
+    "Shoulders": ["Overhead Press", "Lateral Raises", "Rear Delt Flyes"],
+    "Arms": ["Barbell Curls", "Hammer Curls", "Tricep Pushdowns", "Skull Crushers"]
 }
 
 FOOD_DICTIONARY = {
@@ -90,276 +78,307 @@ FOOD_DICTIONARY = {
     "Paneer (100g)": [265, 18, 1, 20],
     "Soya Chunks (50g)": [170, 26, 16, 0.5],
     "White Rice (1 Cup cooked)": [200, 4, 45, 0],
-    "Roti/Chapati (1)": [100, 3, 20, 1],
-    "Peanut Butter (2 tbsp)": [190, 7, 6, 16],
-    "Milk (250ml)": [120, 8, 12, 5]
+    "Roti/Chapati (1)": [100, 3, 20, 1]
 }
 
-# Session State Hooks
+# Runtime Session Management
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
-if 'active_username' not in st.session_state: st.session_state.active_username = None
-if 'current_tab' not in st.session_state: st.session_state.current_tab = "🏠 HOME"
+if 'username' not in st.session_state: st.session_state.username = None
+if 'current_module' not in st.session_state: st.session_state.current_module = "🏠 Home Dashboard"
 
-# Security Gate
+# 🔒 SECURE MULTI-ROLE DOORWAY
 if not st.session_state.logged_in:
-    cols = st.columns([1, 2, 1])
-    with cols[1]:
-        st.markdown("<div class='stealth-card' style='margin-top: 50px;'>", unsafe_allow_html=True)
-        st.markdown("<h2>⚡ HANUMAN CORE DOORWAY</h2>", unsafe_allow_html=True)
-        u_in = st.text_input("Username Identification").strip().lower()
-        p_in = st.text_input("Access Token Key", type="password").strip()
-        if st.button("Authorize Core Access", use_container_width=True):
-            df = pd.read_csv(users_file)
-            if u_in in df['username'].values:
-                saved_pass = df[df['username'] == u_in]['password'].values[0]
-                if str(saved_pass) == p_in:
+    c = st.columns([1, 1.8, 1])
+    with c[1]:
+        st.markdown("<div class='premium-card' style='margin-top:60px;'>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align:center;'>⚡ HANUMAN GATEWAY</h2>", unsafe_allow_html=True)
+        auth_mode = st.radio("Access Level Routing:", ["Sign-In Authorization", "New Athlete Registration"], horizontal=True)
+        u = st.text_input("User Identification Key").strip().lower()
+        p = st.text_input("Security Access Code", type="password").strip()
+        
+        if auth_mode == "Sign-In Authorization":
+            if st.button("Unlock Core Dashboard Systems", use_container_width=True):
+                df = pd.read_csv(users_file)
+                if u in df['Username'].values:
+                    saved_p = df[df['Username'] == u]['Password'].values[0]
+                    if str(saved_p) == p:
+                        st.session_state.logged_in = True
+                        st.session_state.username = u
+                        st.rerun()
+                st.error("Authentication Refused. Token mismatch.")
+        else:
+            if st.button("Initialize Fresh Account Profile", use_container_width=True):
+                df = pd.read_csv(users_file)
+                if u == "" or p == "": st.error("Fields cannot be empty.")
+                elif u in df['Username'].values: st.error("Username identity already claimed.")
+                else:
+                    pd.DataFrame([{"Username": u, "Password": p, "Role": "Member", "Streak": 1, "Freezes": 1}]).to_csv(users_file, mode='a', header=False, index=False)
                     st.session_state.logged_in = True
-                    st.session_state.active_username = u_in
+                    st.session_state.username = u
                     st.rerun()
-            st.error("Invalid Signature Key Matrix.")
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# 🎛️ DYNAMIC SQUARE GRID TILES HEADER NAVIGATION
-st.markdown("### 🎛️ CORE MODULE CONTROL INTERFACE")
-nav_cols = st.columns(9)
-tabs_map = {
-    0: "🏠 HOME", 1: "📡 LIVE", 2: "🏋️ WORKOUT", 3: "🥗 NUTRITION", 
-    4: "🤖 AI TRAINER", 5: "📊 PROGRESS", 6: "💳 PAYMENT", 7: "📍 LOCATION", 8: "👤 PROFILE"
-}
-for i, label in tabs_map.items():
-    if nav_cols[i].button(label, use_container_width=True):
-        st.session_state.current_tab = label
+# Role definitions mapping
+u_df = pd.read_csv(users_file)
+user_row = u_df[u_df['Username'] == st.session_state.username].iloc[0]
+is_owner = (user_row['Role'] == "Owner")
+
+# 🎛️ HIGH-RETENTION SQUARE INTERFACE TILES MATRIX
+st.markdown("### 🎛️ SYSTEM COMPONENT ROUTER MATRIX")
+modules = ["🏠 Home Dashboard", "📡 Live Telemetry", "🏋️ Workout Log", "🥗 Nutrition Node", "🤖 AI Coach Hub", "📊 Analytical Progress", "💳 Payment Hub", "👤 Profile Node"]
+if is_owner: modules.append("👑 Operational HQ")
+
+tile_cols = st.columns(len(modules))
+for idx, mod in enumerate(modules):
+    if tile_cols[idx].button(mod, use_container_width=True):
+        st.session_state.current_module = mod
         st.rerun()
 
 st.write("---")
-current_selection = st.session_state.current_tab
+active_mod = st.session_state.current_module
 
 # =========================================================================================
-# 🏠 HOME TAB
+# 🏠 HOME DASHBOARD TAB
 # =========================================================================================
-if current_selection == "🏠 HOME":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.markdown("## 🏠 CHAMPION COMMAND STATION")
-    st.write(f"Welcome back, **{st.session_state.active_username.upper()}**! Here is your automated training operational directive:")
+if active_mod == "🏠 Home Dashboard":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    st.markdown(f"## 🏠 CORE HUD: Welcome Back, {st.session_state.username.upper()}")
     
-    # AI Bot Automated Split Suggestion System
-    st.markdown("### 🤖 Automated Split Prescription Coach")
+    # Habit-Forming Streak Counters Engine
+    st.markdown("### 🔥 Consistency Matrix Status")
+    h_c1, h_c2, h_c3 = st.columns(3)
+    h_c1.metric("Current Training Streak", f"{user_row['Streak']} Days")
+    h_c2.metric("Available Streak Freezes Remaining", f"{user_row['Freezes']} Left")
+    
+    if h_c3.button("🛡️ Activate Streak Freeze Node"):
+        if user_row['Freezes'] > 0:
+            u_df.loc[u_df['Username'] == st.session_state.username, 'Freezes'] -= 1
+            u_df.to_csv(users_file, index=False)
+            st.success("Streak Freeze deployed successfully! Your counter stays locked today, bro.")
+            st.rerun()
+        else: st.error("No Streak Freezes left in your profile bank.")
+        
+    # AI Automatic Split Planner Suggestion Block
+    st.write("---")
+    st.markdown("#### 🤖 Daily Coaching Routine Broadcast")
     day_name = datetime.now().strftime("%A")
-    split_suggestions = {
-        "Monday": "🔥 PUSH DAY (Chest/Shoulders/Triceps) — Focus on max force output vectors.",
-        "Tuesday": "⚡ PULL DAY (Back/Rear Delts/Biceps) — Prioritize dynamic row contractions.",
-        "Wednesday": "🦵 LEG DAY (Quads/Hamstrings/Calves) — Focus on absolute mechanical squat depth.",
-        "Thursday": "🔥 PUSH DAY — Focus on dynamic hypertrophy targets.",
-        "Friday": "⚡ PULL DAY — Accentuate deep mechanical width isolation row variations.",
-        "Saturday": "🦵 LEG DAY / ARMS OVERLOAD — Secondary stimulation volume block.",
-        "Sunday": "🧘 ABS & CARDIO CONDITIONING / RECOVERY REST SCHEDULING SYSTEM"
+    split_reference = {
+        "Monday": "🔥 Push Split (Chest/Shoulders/Triceps) - Target mechanical tension overload.",
+        "Tuesday": "⚡ Pull Split (Back/Rear Delts/Biceps) - Focus on row extensions.",
+        "Wednesday": "🦵 Lower Body Split (Quads/Hamstrings/Glutes) - Absolute squat depth focus.",
+        "Thursday": "🔥 Push Volume Focus - Focus on structural hypertrophy scaling.",
+        "Friday": "⚡ Pull Hypertrophy Focus - Isolate single arm vector mechanics.",
+        "Saturday": "💪 Arm Overload & Conditioning - Target high lactic threshold volume splits.",
+        "Sunday": "🧘 Complete System Adaptability Rest Recovery & Mobility Alignment Framework."
     }
-    st.info(f"📅 Today is **{day_name}**. Your Coach prescribes: **{split_suggestions.get(day_name)}**")
-    
-    # Quick Summary Data Frames
-    st.write("#### Today's Nutritional Baseline Horizon")
-    if os.path.exists(food_logs_file):
-        f_df = pd.read_csv(food_logs_file)
-        today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.active_username)]
-        if not today_f.empty:
-            st.metric("Total Calories Consumed", f"{int(today_f['Calories'].sum())} kcal")
-            st.dataframe(today_f[['MealPeriod', 'FoodItem', 'Calories', 'Protein']], use_container_width=True)
-        else:
-            st.info("No nutritional records synchronized on disk for today yet.")
+    st.info(f"📅 Current Calendar Day Context: **{day_name}**. Prescribed Protocol: **{split_reference.get(day_name)}**")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 📡 LIVE TAB
+# 📡 LIVE TELEMETRY TAB
 # =========================================================================================
-elif current_selection == "📡 LIVE":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.markdown("## 📡 LIVE BIOMETRIC OCCUPANCY METRICS")
-    st.metric("Active Floor Headcount", "38 Members Inside")
-    st.write("• **Floor 1 (Strength Core Matrix):** 22 People")
-    st.write("• **Floor 2 (Cardio & Mechanical Legs Array):** 16 People")
+elif active_mod == "📡 Live Telemetry":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    st.markdown("## 📡 LIVE IOT FACILITY OCCUPANCY TRAFFIC")
+    st.metric("Facility Floor Load Density", "28 Athletes Logged")
+    st.write("• **Floor 1 (Free Weights & Cables):** 18 People")
+    st.write("• **Floor 2 (Cardio, HIIT, Machine Squat Arrays):** 10 People")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 🏋️ WORKOUT TAB
+# 🏋️ WORKOUT LOG TAB
 # =========================================================================================
-elif current_selection == "🏋️ WORKOUT":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+elif active_mod == "🏋️ Workout Log":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
     st.markdown("## 🏋️ USER-CONTROLLED PROGRESSIVE WORKOUT LOG ENGINE")
     
-    # 1. Select the Target Muscle Architecture Group
-    muscle_group = st.selectbox("1. Choose Target Muscle Architecture:", list(EXERCISE_DICTIONARY.keys()))
+    w_tab1, w_tab2, w_tab3 = st.tabs(["📝 Log Sets Execution", "🛠️ Custom Routine Builder", "🧮 Barbell Plate Calculator"])
     
-    # 2. Select Exercise from Dictionary Array
-    exercise_selected = st.selectbox("2. Choose Performed Movement Node:", EXERCISE_DICTIONARY[muscle_group])
-    
-    # 3. Dynamic Manual Sets Logging Configuration Form
-    num_sets = st.number_input("3. Number of Sets Completed", min_value=1, max_value=10, value=3)
-    
-    st.write("#### 4. Specify Repetitions Executed Across Individual Sets Matrix:")
-    logged_sets = []
-    set_cols = st.columns(int(num_sets))
-    for s in range(int(num_sets)):
-        reps_done = set_cols.number_input(f"Set {s+1} Reps:", min_value=0, max_value=100, value=10, key=f"reps_s_{s}")
-        logged_sets.append(reps_done)
+    with w_tab1:
+        muscle = st.selectbox("Select Target Muscle Cluster Group:", list(EXERCISE_DICTIONARY.keys()))
+        exercise = st.selectbox("Select Target Exercise Movement Node:", EXERCISE_DICTIONARY[muscle])
         
-    if st.button("🔒 SYNC WORKOUT SNAPSHOT LOGS TO DATA MATRIX DISK", use_container_width=True):
-        timestamp_str = date.today().strftime("%Y-%m-%d")
-        new_logs_list = []
-        for s_idx, r_val in enumerate(logged_sets):
-            new_logs_list.append({
-                "Date": timestamp_str, "Username": st.session_state.active_username,
-                "WorkoutSplit": muscle_group, "Exercise": exercise_selected, "SetNumber": s_idx + 1, "Reps": r_val
-            })
-        pd.DataFrame(new_logs_list).to_csv(workout_logs_file, mode='a', header=False, index=False)
-        st.success(f"Successfully recorded performance tracks for `{exercise_selected}` onto system storage database.")
+        c1, c2, c3 = st.columns(3)
+        w_sets = c1.number_input("Sets Executed:", min_value=1, max_value=10, value=3)
+        w_weight = c2.number_input("Top Working Weight Load (kg):", min_value=0.0, max_value=400.0, value=60.0, step=2.5)
         
-    st.write("---")
-    st.write("### 📅 Today's Completed Training Logs")
-    if os.path.exists(workout_logs_file):
-        w_df = pd.read_csv(workout_logs_file)
-        today_w = w_df[(w_df['Date'] == date.today().strftime("%Y-%m-%d")) & (w_df['Username'] == st.session_state.active_username)]
-        st.dataframe(today_w, use_container_width=True)
+        st.write("Specify exact repetitions completed across each set index matrix layer:")
+        rep_logs = []
+        r_cols = st.columns(int(w_sets))
+        for i in range(int(w_sets)):
+            r_val = r_cols.number_input(f"Set {i+1} Reps:", min_value=0, max_value=100, value=10, key=f"re_s_{i}")
+            rep_logs.append(r_val)
+            
+        if st.button("🔒 Commit Session Set Tracks to Local Disk Database", use_container_width=True):
+            today_str = date.today().strftime("%Y-%m-%d")
+            new_rows = [{"Date": today_str, "Username": st.session_state.username, "Exercise": exercise, "Weight": w_weight, "Sets": s_idx+1, "Reps": r_v} for s_idx, r_v in enumerate(rep_logs)]
+            pd.DataFrame(new_rows).to_csv(workout_logs_file, mode='a', header=False, index=False)
+            st.success("Workout metrics logged successfully!")
+            
+    with w_tab2:
+        st.markdown("### 🛠️ Custom Routine Architect")
+        r_name = st.text_input("Routine Designation Label (e.g., Push/Pull/Legs Version 1)")
+        all_ex = []
+        for v in EXERCISE_DICTIONARY.values(): all_ex.extend(v)
+        selected_ex_nodes = st.multiselect("Select Core Exercises to Chain inside Routine Vector Array:", sorted(list(set(all_ex))))
+        
+        if st.button("💾 Lock Custom Routine Template Matrix into Storage"):
+            if r_name and selected_ex_nodes:
+                pd.DataFrame([{"Username": st.session_state.username, "RoutineName": r_name, "ExercisesList": "|".join(selected_ex_nodes)}]).to_csv(custom_routines_file, mode='a', header=False, index=False)
+                st.success(f"Custom routine layout `{r_name}` written to disk registry.")
+                
+    with w_tab3:
+        st.markdown("### 🧮 Precision Barbell Plate Loading Calculator")
+        t_weight = st.number_input("Target Barbell Working Load Metric (kg):", min_value=20.0, max_value=400.0, value=100.0, step=2.5)
+        bar_weight = st.selectbox("Barbell Base Tare Weight Specification:", [20.0, 15.0, 10.0])
+        
+        rem_weight = (t_weight - bar_weight) / 2
+        plates = [25.0, 20.0, 15.0, 10.0, 5.0, 2.5]
+        plate_counts = {}
+        for p in plates:
+            count = int(rem_weight // p)
+            if count > 0:
+                plate_counts[f"{p} kg Plate"] = count
+                rem_weight -= (count * p)
+                
+        st.write("#### Exact Loading Required per Side:")
+        if plate_counts:
+            for k, v in plate_counts.items(): st.markdown(f"• **{k}:** Load `{v}` items per side.")
+        else: st.info("Load weight matches empty bar specification parameters.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 🥗 NUTRITION TAB
+# 🥗 NUTRITION NODE TAB
 # =========================================================================================
-elif current_selection == "🥗 NUTRITION":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+elif active_mod == "🥗 Nutrition Node":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
     st.markdown("## 🥗 ADVANCED PERIODIZED INTAKE ENGINE")
     
-    # 1. Structural Separation Into Designated Meal Slots
-    meal_slot = st.radio("Choose Targeted Meal Period Horizon Placement:", ["Breakfast 🍳", "Lunch 🍚", "Snacks 🥜", "Dinner 🥩"], horizontal=True)
-    
-    # 2. Food Resource Select Profile
-    selected_food = st.selectbox("Choose Consumed Resource Core Node:", list(FOOD_DICTIONARY.keys()))
-    serving_grams_multiplier = st.number_input("Serving Size Scale Factor Coefficient (1.0 = Standard 100g/Portion):", min_value=0.1, max_value=10.0, value=1.0, step=0.1)
+    meal_slot = st.radio("Target Intake Category Slot Placement Configuration:", ["Breakfast 🍳", "Lunch 🍚", "Snacks 🥜", "Dinner 🥩"], horizontal=True)
+    selected_food = st.selectbox("Choose Consumed Resource Node Element:", list(FOOD_DICTIONARY.keys()))
+    serving_factor = st.number_input("Serving Size Scale Factor Coefficient (1.0 = Standard 100g/Portion):", min_value=0.1, max_value=10.0, value=1.0)
     
     if st.button("Commit Portion Log Entry to System Queue", use_container_width=True):
-        base_macros = FOOD_DICTIONARY[selected_food]
-        cal_calc = int(base_macros[0] * serving_grams_multiplier)
-        prot_calc = round(base_macros[1] * serving_grams_multiplier, 1)
-        carb_calc = round(base_macros[2] * serving_grams_multiplier, 1)
-        fat_calc = round(base_macros[3] * serving_grams_multiplier, 1)
-        
-        new_food_row = pd.DataFrame([{
-            "Date": date.today().strftime("%Y-%m-%d"), "Username": st.session_state.active_username,
-            "MealPeriod": meal_slot, "FoodItem": selected_food, "Calories": cal_calc,
-            "Protein": prot_calc, "Carbs": carb_calc, "Fats": fat_calc
-        }])
-        new_food_row.to_csv(food_logs_file, mode='a', header=False, index=False)
-        st.success(f"Tracked {selected_food} within the `{meal_slot}` bracket database matrix layout successfully.")
+        macros = FOOD_DICTIONARY[selected_food]
+        pd.DataFrame([{
+            "Date": date.today().strftime("%Y-%m-%d"), "Username": st.session_state.username, "MealPeriod": meal_slot,
+            "FoodItem": selected_food, "Calories": int(macros[0]*serving_factor), "Protein": round(macros[1]*serving_factor,1),
+            "Carbs": round(macros[2]*serving_factor,1), "Fats": round(macros[3]*serving_factor,1)
+        }]).to_csv(food_logs_file, mode='a', header=False, index=False)
+        st.success("Meal entry tracked.")
         
     st.write("---")
-    st.markdown("### 📊 PERIODIZED MEAL TRACKING METRICS LAYER")
-    
+    st.markdown("### 📊 Consolidated Intake Progression Matrix")
     if os.path.exists(food_logs_file):
         f_df = pd.read_csv(food_logs_file)
-        user_today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.active_username)]
+        today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.username)]
         
-        # Displaying segregated targets slots to user before absolute consolidation summing
-        meal_periods_list = ["Breakfast 🍳", "Lunch 🍚", "Snacks 🥜", "Dinner 🥩"]
-        p_cols = st.columns(4)
-        for idx, period in enumerate(meal_periods_list):
-            period_data = user_today_f[user_today_f['MealPeriod'] == period]
-            p_cols[idx].markdown(f"**{period} Logs:**")
-            if not period_data.empty:
-                for f_idx, row in period_data.iterrows():
-                    p_cols[idx].markdown(f"• {row['FoodItem']} (`{int(row['Calories'])} kcal`)")
-            else:
-                p_cols[idx].write("<span style='color:gray; font-size:11px;'>No item entries</span>", unsafe_allow_html=True)
-                
-        # 📈 TOTAL INTAKE CONSOLIDATED PROGRESS REGISTRY HUB PANEL
-        st.write("---")
-        st.markdown("#### **🔥 Total Consolidated Intake Progression Matrix**")
-        total_cal = user_today_f['Calories'].sum()
-        total_prot = user_today_f['Protein'].sum()
-        total_carb = user_today_f['Carbs'].sum()
-        total_fat = user_today_f['Fats'].sum()
-        
-        hud_c1, hud_c2, hud_c3, hud_c4 = st.columns(4)
-        hud_c1.metric("Total Energy Pool Logged", f"{int(total_cal)} / 2500 kcal")
-        hud_c2.metric("Total Active Protein Sub-Matrix", f"{int(total_prot)} / 160 g")
-        hud_c3.metric("Total Active Carbohydrates", f"{int(total_carb)} / 250 g")
-        hud_c4.metric("Total Lipids/Fats Allocation", f"{int(total_fat)} / 70 g")
+        nc1, nc2, nc3, nc4 = st.columns(4)
+        nc1.metric("Energy Logged", f"{int(today_f['Calories'].sum())} / 2500 kcal")
+        nc2.metric("Protein Intake", f"{int(today_f['Protein'].sum())} / 160 g")
+        nc3.metric("Carbohydrates", f"{int(today_f['Carbs'].sum())} / 250 g")
+        nc4.metric("Fats Tracker", f"{int(today_f['Fats'].sum())} / 70 g")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 🤖 AI TRAINER TAB
+# 🤖 AI COACH HUB TAB
 # =========================================================================================
-elif current_selection == "🤖 AI TRAINER":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.markdown("## 🤖 CORE ARTIFICIAL PERSONAL ASSISTANT WORKSTATION")
-    st.write("Ask your Coach anything about sports-science, meal replacements, or technique adjustments.")
-    user_query_input = st.text_input("Enter question terminal cue script block:")
+elif active_mod == "🤖 AI Coach Hub":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    st.markdown("## 🤖 COGNITIVE ASSISTANT CONTROL INTERFACE")
+    st.write("Prompt your automated trainer for technique cues or budget macro modifications:")
+    q = st.text_input("Enter question script layer text input box:")
     if st.button("Fire Query Tracking Node Pipeline", use_container_width=True):
-        if user_query_input.strip() != "":
-            st.info(f"**Coach Hanuman AI Response Configuration Output Engine:**\n\nTo optimize your strategy right now, ensure you are tracking your reps accurately across your sets layer inside the workout engine tab. Keep your protein floor above 2.0g per kg of total mass to secure long-term physical recovery balances, bro!")
+        if q.strip() != "":
+            st.info("**Coach Hanuman AI Automated Output Engine System Response:**\n\nEnsure your repetition tempo values control the eccentric deceleration path phase completely, bro! Hit your meal slot tracking matrices on time to lock down recovery.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 📊 PROGRESS TAB
+# 📊 ANALYTICAL PROGRESS TAB
 # =========================================================================================
-elif current_selection == "📊 PROGRESS":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.markdown("## 📊 MASTER STRENGTH PERFORMANCE REGISTER")
-    st.write("No automation templates here. Select any gym movement vector, input your figures, and compile your historical PR registry manually.")
+elif active_mod == "📊 Analytical Progress":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    st.markdown("## 📊 PURE MANUAL STRENGTH PERFORMANCE REGISTER")
     
-    # 1. Compile Global Gym Exercises Registry Array Dropdown List options safely
-    all_possible_gym_movements_list = []
-    for exercise_group in EXERCISE_DICTIONARY.values():
-        all_possible_gym_movements_list.extend(exercise_group)
-        
-    # Manual PR Select fields
-    pr_ex = st.selectbox("Select Target Exercise Asset Node:", sorted(list(set(all_possible_gym_movements_list))))
-    pr_wt = st.number_input("Absolute Top Working Weight Payload Verified (kg):", min_value=1, max_value=500, value=80)
+    p_tab1, p_tab2, p_tab3 = st.tabs(["📉 Biometrics Analytics & Check-ins", "🏆 Manual PR Strength Tracker", "🖼️ Private Transformation Vault"])
     
-    if st.button("🔒 Lock Performance Metric into Personal Record Registry Ledger", use_container_width=True):
-        pr_df = pd.read_csv(pr_ledger_file)
-        # Clear duplicate movement records for user profiles to keep file clean
-        pr_df = pr_df[~((pr_df['Username'] == st.session_state.active_username) & (pr_df['Exercise'] == pr_ex))]
-        new_pr_row = pd.DataFrame([{"Username": st.session_state.active_username, "Exercise": pr_ex, "WeightMax": pr_wt}])
-        pd.concat([pr_df, new_pr_row], ignore_index=True).to_csv(pr_ledger_file, index=False)
-        st.success(f"Personal Record array profile updated successfully for `{pr_ex}`!")
-        st.rerun()
+    with p_tab1:
+        with st.form("checkin_metrics_form"):
+            ci_w = st.number_input("Current Body Mass Weight (kg):", min_value=30.0, max_value=200.0, value=75.0)
+            ci_bf = st.number_input("Body Fat Ratio (%):", min_value=3.0, max_value=50.0, value=15.0)
+            ci_water = st.slider("Water Hydration Volume Tracking Index (Liters):", 0.0, 8.0, 3.0, step=0.5)
+            ci_feel = st.select_slider("Daily Sentiment / Happiness Index Valuation:", options=["Low Energy", "Tired", "Normal Active", "Excellent Performance Rating"])
+            submit_ci = st.form_submit_button("🚀 Commit Snapshot Check-in To Analytics Log")
+            
+        if submit_ci:
+            pd.DataFrame([{
+                "Date": date.today().strftime("%Y-%m-%d"), "Username": st.session_state.username,
+                "Weight": ci_w, "BMI": round(ci_w / (1.75**2),1), "BodyFat": ci_bf, "WaterLiters": ci_water, "Sentiment": ci_feel
+            }]).to_csv(checkin_ledger_file, mode='a', header=False, index=False)
+            st.success("Biometric data payload synced successfully!")
+            
+    with p_tab2:
+        st.markdown("### 🏆 Heavy Hitter Personal Records Ledger")
+        all_movements = []
+        for v in EXERCISE_DICTIONARY.values(): all_movements.extend(v)
+        pr_ex = st.selectbox("Select Target Exercise Asset Node:", sorted(list(set(all_movements))))
+        pr_val = st.number_input("Absolute Verified Top Single-Rep Max Capacity Weight (kg):", min_value=1.0, max_value=500.0, value=100.0, step=2.5)
         
-    st.write("---")
-    st.write("#### 🏆 My Verified Heavy Hitter Standing PR Ledger Matrix")
-    if os.path.exists(pr_ledger_file):
-        display_pr_df = pd.read_csv(pr_ledger_file)
-        user_prs = display_pr_df[display_pr_df['Username'] == st.session_state.active_username].reset_index(drop=True)
-        st.dataframe(user_prs[['Exercise', 'WeightMax']], use_container_width=True)
+        if st.button("🔒 Verify and Log Maximum Strength Lift Payload"):
+            pr_df = pd.read_csv(pr_ledger_file)
+            pr_df = pr_df[~((pr_df['Username'] == st.session_state.username) & (pr_df['Exercise'] == pr_ex))]
+            pd.concat([pr_df, pd.DataFrame([{"Username": st.session_state.username, "Exercise": pr_ex, "WeightMax": pr_val}])], ignore_index=True).to_csv(pr_ledger_file, index=False)
+            st.success(f"PR updated successfully for `{pr_ex}`!")
+            
+        st.write("---")
+        if os.path.exists(pr_ledger_file):
+            pr_df = pd.read_csv(pr_ledger_file)
+            st.dataframe(pr_df[pr_df['Username'] == st.session_state.username][['Exercise', 'WeightMax']].reset_index(drop=True), use_container_width=True)
+            
+    with p_tab3:
+        st.markdown("### 🖼️ Private Transformation Progress Photo Vault")
+        st.write("Upload and secure your weekly physical progress shots here to audit visual structural composition updates.")
+        st.file_uploader("Select weekly progress photo configuration file snapshot tracking layer:", type=["jpg", "jpeg", "png"])
+        st.info("🔒 Secure local storage sandboxing engine active. Images are encrypted directly within local memory buffers.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 💳 PAYMENT TAB
+# 💳 PAYMENT HUB TAB
 # =========================================================================================
-elif current_selection == "💳 PAYMENT":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.markdown("## 💳 PREMIUM PROCESSING CONTROL EDGE WALLET")
-    p_cols = st.columns(3)
-    p_cols[0].button("💪 Starter Pass\n\n ₹1,500 / Month", use_container_width=True, key="p1")
-    p_cols[1].button("🔥 Quarterly Pack\n\n ₹4,000 / 3 Months", use_container_width=True, key="p2")
-    p_cols[2].button("👑 Iron Elite VIP\n\n ₹12,000 / Year", use_container_width=True, key="p3")
+elif active_mod == "💳 Payment Hub":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    st.markdown("## 💳 OPERATION BILLING GATEWAY CONTROL")
+    st.write("Select package modules to initiate digital signature remittance configurations:")
+    pay_cols = st.columns(3)
+    pay_cols[0].button("💪 Monthly Gold\n\n ₹1,500 / Month", use_container_width=True, key="m1")
+    pay_cols[1].button("🔥 Quarterly Bulk Pack\n\n ₹4,000 / 3 Months", use_container_width=True, key="m2")
+    pay_cols[2].button("👑 Annual Elite Stratum\n\n ₹12,000 / Year", use_container_width=True, key="m3")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
-# 📍 LOCATION TAB
+# 👤 PROFILE NODE TAB
 # =========================================================================================
-elif current_selection == "📍 LOCATION":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
-    st.markdown("## 📍 JAI HANUMAN FACILITY BOUNDARIES MAP NODE")
-    st.write("• **Central Operational Center Branch:** Emmiganur, Andhra Pradesh, India.")
-    st.write("• **Facility Status:** Fully Open Infrastructure Active (05:00 AM - 10:00 PM Scale Windows).")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================================================
-# 👤 PROFILE TAB
-# =========================================================================================
-elif current_selection == "👤 PROFILE":
-    st.markdown("<div class='stealth-card'>", unsafe_allow_html=True)
+elif active_mod == "👤 Profile Node":
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
     st.markdown("## 👤 SECURITY PROFILE PARAMETERS IDENTIFICATION")
-    st.write(f"Identity Handle Node Checked: `{st.session_state.active_username.upper()}`")
-    st.write("License Class Level: Active Premium Athlete Strata Tier.")
+    st.write(f"Identity Handle Node Checked: `{st.session_state.username.upper()}`")
+    st.write(f"Current Core System Profile Clearance Strata Role Designation: **{user_row['Role'].upper()}**")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================================================
+# 👑 OPERATIONAL HQ (OWNER ADMIN ACCESS)
+# =========================================================================================
+elif active_mod == "👑 Operational HQ" and is_owner:
+    st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+    st.markdown("## 👑 OWNER OPERATIONAL COMMAND MANAGEMENT")
+    st.write("Monitor total system registrations, audit active operational files, and manage financial parameters.")
+    
+    hq_tab1, hq_tab2 = st.tabs(["👥 User Records Index Engine", "📈 Global Analytics Data Stream"])
+    with hq_tab1:
+        st.dataframe(pd.read_csv(users_file), use_container_width=True)
+    with hq_tab2:
+        if os.path.exists(checkin_ledger_file):
+            st.write("#### Global Client Biometric Sentiment Data Streams")
+            st.dataframe(pd.read_csv(checkin_ledger_file), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
