@@ -230,7 +230,7 @@ elif active_mod == "🏋️ Workout Log":
         rep_logs = []
         r_cols = st.columns(int(w_sets))
         for i in range(int(w_sets)):
-            r_val = r_cols.number_input(f"Set {i+1} Reps:", min_value=0, max_value=100, value=10, key=f"re_s_{i}")
+            r_val = r_cols[i].number_input(f"Set {i+1} Reps:", min_value=0, max_value=100, value=10, key=f"re_s_{i}")
             rep_logs.append(r_val)
             
         if st.button("🔒 Commit Session Set Tracks to Local Disk Database", use_container_width=True):
