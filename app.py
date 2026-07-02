@@ -62,6 +62,12 @@ def init_enterprise_architecture():
 
 init_enterprise_architecture()
 
+# Global Helper to load and dynamically fix columns case issues
+def load_and_normalize_db(file_path):
+    df = pd.read_csv(file_path)
+    df.columns = [c.capitalize() for c in df.columns]
+    return df
+
 # 🗃️ STATIC SOURCE DATA REFERENCE LIBRARIES
 EXERCISE_DICTIONARY = {
     "Chest": ["Bench Press", "Incline Dumbbell Press", "Pec Dec Flyes", "Cable Crossovers"],
@@ -98,7 +104,7 @@ if not st.session_state.logged_in:
         
         if auth_mode == "Sign-In Authorization":
             if st.button("Unlock Core Dashboard Systems", use_container_width=True):
-                df = pd.read_csv(users_file)
+                df = load_and_normalize_db(users_file)
                 if u in df['Username'].values:
                     saved_p = df[df['Username'] == u]['Password'].values[0]
                     if str(saved_p) == p:
@@ -108,7 +114,7 @@ if not st.session_state.logged_in:
                 st.error("Authentication Refused. Token mismatch.")
         else:
             if st.button("Initialize Fresh Account Profile", use_container_width=True):
-                df = pd.read_csv(users_file)
+                df = load_and_normalize_db(users_file)
                 if u == "" or p == "": st.error("Fields cannot be empty.")
                 elif u in df['Username'].values: st.error("Username identity already claimed.")
                 else:
@@ -119,9 +125,15 @@ if not st.session_state.logged_in:
         st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# Role definitions mapping
-u_df = pd.read_csv(users_file)
+# Load and safeguard profile configs
+u_df = load_and_normalize_db(users_file)
 user_row = u_df[u_df['Username'] == st.session_state.username].iloc[0]
+
+# Ensure backwards compatibility for legacy database entries missing tracking indicators
+if "Role" not in u_df.columns: user_row['Role'] = "Member"
+if "Streak" not in u_df.columns: user_row['Streak'] = 1
+if "Freezes" not in u_df.columns: user_row['Freezes'] = 1
+
 is_owner = (user_row['Role'] == "Owner")
 
 # 🎛️ HIGH-RETENTION SQUARE INTERFACE TILES MATRIX
@@ -271,7 +283,7 @@ elif active_mod == "🥗 Nutrition Node":
     st.write("---")
     st.markdown("### 📊 Consolidated Intake Progression Matrix")
     if os.path.exists(food_logs_file):
-        f_df = pd.read_csv(food_logs_file)
+        f_df = load_and_normalize_db(food_logs_file)
         today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.username)]
         
         nc1, nc2, nc3, nc4 = st.columns(4)
@@ -326,15 +338,15 @@ elif active_mod == "📊 Analytical Progress":
         pr_val = st.number_input("Absolute Verified Top Single-Rep Max Capacity Weight (kg):", min_value=1.0, max_value=500.0, value=100.0, step=2.5)
         
         if st.button("🔒 Verify and Log Maximum Strength Lift Payload"):
-            pr_df = pd.read_csv(pr_ledger_file)
+            pr_df = load_and_normalize_db(pr_ledger_file)
             pr_df = pr_df[~((pr_df['Username'] == st.session_state.username) & (pr_df['Exercise'] == pr_ex))]
             pd.concat([pr_df, pd.DataFrame([{"Username": st.session_state.username, "Exercise": pr_ex, "WeightMax": pr_val}])], ignore_index=True).to_csv(pr_ledger_file, index=False)
             st.success(f"PR updated successfully for `{pr_ex}`!")
             
         st.write("---")
         if os.path.exists(pr_ledger_file):
-            pr_df = pd.read_csv(pr_ledger_file)
-            st.dataframe(pr_df[pr_df['Username'] == st.session_state.username][['Exercise', 'WeightMax']].reset_index(drop=True), use_container_width=True)
+            pr_df = load_and_normalize_db(pr_ledger_file)
+            st.dataframe(pr_df[pr_df['Username'] == st.session_state.username][['Exercise', 'Weightmax']].reset_index(drop=True), use_container_width=True)
             
     with p_tab3:
         st.markdown("### 🖼️ Private Transformation Progress Photo Vault")
@@ -376,9 +388,9 @@ elif active_mod == "👑 Operational HQ" and is_owner:
     
     hq_tab1, hq_tab2 = st.tabs(["👥 User Records Index Engine", "📈 Global Analytics Data Stream"])
     with hq_tab1:
-        st.dataframe(pd.read_csv(users_file), use_container_width=True)
+        st.dataframe(load_and_normalize_db(users_file), use_container_width=True)
     with hq_tab2:
         if os.path.exists(checkin_ledger_file):
             st.write("#### Global Client Biometric Sentiment Data Streams")
-            st.dataframe(pd.read_csv(checkin_ledger_file), use_container_width=True)
+            st.dataframe(load_and_normalize_db(checkin_ledger_file), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
