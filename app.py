@@ -46,9 +46,12 @@ pr_ledger_file = "user_pr_ledger.csv"
 custom_routines_file = "user_custom_routines.csv"
 checkin_ledger_file = "user_checkin_ledger.csv"
 
+def force_recreate_users():
+    pd.DataFrame([{"Username": "varshith", "Password": "admin123", "Role": "Owner", "Streak": 5, "Freezes": 1}]).to_csv(users_file, index=False)
+
 def init_enterprise_architecture():
     if not os.path.exists(users_file):
-        pd.DataFrame([{"Username": "varshith", "Password": "admin123", "Role": "Owner", "Streak": 5, "Freezes": 1}]).to_csv(users_file, index=False)
+        force_recreate_users()
     if not os.path.exists(workout_logs_file):
         pd.DataFrame(columns=["Date", "Username", "Exercise", "Weight", "Sets", "Reps"]).to_csv(workout_logs_file, index=False)
     if not os.path.exists(food_logs_file):
@@ -62,9 +65,19 @@ def init_enterprise_architecture():
 
 init_enterprise_architecture()
 
-# Global Helper to load and dynamically fix columns case issues
+# 🛡️ UPGRADED SELF-HEALING LOADING MECHANISM
 def load_and_normalize_db(file_path):
-    df = pd.read_csv(file_path)
+    try:
+        df = pd.read_csv(file_path)
+    except Exception:
+        # If the file structure is fundamentally corrupted, self-heal immediately
+        if file_path == users_file:
+            force_recreate_users()
+            df = pd.read_csv(users_file)
+        else:
+            # Fallback for log files to prevent total application crashes
+            df = pd.DataFrame()
+            
     df.columns = [c.capitalize() for c in df.columns]
     return df
 
@@ -116,7 +129,7 @@ if not st.session_state.logged_in:
             if st.button("Initialize Fresh Account Profile", use_container_width=True):
                 df = load_and_normalize_db(users_file)
                 if u == "" or p == "": st.error("Fields cannot be empty.")
-                elif u in df['Username'].values: st.error("Username identity already claimed.")
+                elif not df.empty and u in df['Username'].values: st.error("Username identity already claimed.")
                 else:
                     pd.DataFrame([{"Username": u, "Password": p, "Role": "Member", "Streak": 1, "Freezes": 1}]).to_csv(users_file, mode='a', header=False, index=False)
                     st.session_state.logged_in = True
@@ -129,7 +142,7 @@ if not st.session_state.logged_in:
 u_df = load_and_normalize_db(users_file)
 user_row = u_df[u_df['Username'] == st.session_state.username].iloc[0]
 
-# Ensure backwards compatibility for legacy database entries missing tracking indicators
+# Ensure backwards compatibility for legacy parameters
 if "Role" not in u_df.columns: user_row['Role'] = "Member"
 if "Streak" not in u_df.columns: user_row['Streak'] = 1
 if "Freezes" not in u_df.columns: user_row['Freezes'] = 1
@@ -157,8 +170,7 @@ if active_mod == "🏠 Home Dashboard":
     st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
     st.markdown(f"## 🏠 CORE HUD: Welcome Back, {st.session_state.username.upper()}")
     
-    # Habit-Forming Streak Counters Engine
-    st.markdown("### 🔥 Consistency Matrix Status")
+    st.markdown("### ### 🔥 Consistency Matrix Status")
     h_c1, h_c2, h_c3 = st.columns(3)
     h_c1.metric("Current Training Streak", f"{user_row['Streak']} Days")
     h_c2.metric("Available Streak Freezes Remaining", f"{user_row['Freezes']} Left")
@@ -171,7 +183,6 @@ if active_mod == "🏠 Home Dashboard":
             st.rerun()
         else: st.error("No Streak Freezes left in your profile bank.")
         
-    # AI Automatic Split Planner Suggestion Block
     st.write("---")
     st.markdown("#### 🤖 Daily Coaching Routine Broadcast")
     day_name = datetime.now().strftime("%A")
@@ -284,13 +295,14 @@ elif active_mod == "🥗 Nutrition Node":
     st.markdown("### 📊 Consolidated Intake Progression Matrix")
     if os.path.exists(food_logs_file):
         f_df = load_and_normalize_db(food_logs_file)
-        today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.username)]
-        
-        nc1, nc2, nc3, nc4 = st.columns(4)
-        nc1.metric("Energy Logged", f"{int(today_f['Calories'].sum())} / 2500 kcal")
-        nc2.metric("Protein Intake", f"{int(today_f['Protein'].sum())} / 160 g")
-        nc3.metric("Carbohydrates", f"{int(today_f['Carbs'].sum())} / 250 g")
-        nc4.metric("Fats Tracker", f"{int(today_f['Fats'].sum())} / 70 g")
+        if not f_df.empty:
+            today_f = f_df[(f_df['Date'] == date.today().strftime("%Y-%m-%d")) & (f_df['Username'] == st.session_state.username)]
+            
+            nc1, nc2, nc3, nc4 = st.columns(4)
+            nc1.metric("Energy Logged", f"{int(today_f['Calories'].sum())} / 2500 kcal")
+            nc2.metric("Protein Intake", f"{int(today_f['Protein'].sum())} / 160 g")
+            nc3.metric("Carbohydrates", f"{int(today_f['Carbs'].sum())} / 250 g")
+            nc4.metric("Fats Tracker", f"{int(today_f['Fats'].sum())} / 70 g")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
@@ -339,20 +351,21 @@ elif active_mod == "📊 Analytical Progress":
         
         if st.button("🔒 Verify and Log Maximum Strength Lift Payload"):
             pr_df = load_and_normalize_db(pr_ledger_file)
-            pr_df = pr_df[~((pr_df['Username'] == st.session_state.username) & (pr_df['Exercise'] == pr_ex))]
+            if not pr_df.empty:
+                pr_df = pr_df[~((pr_df['Username'] == st.session_state.username) & (pr_df['Exercise'] == pr_ex))]
             pd.concat([pr_df, pd.DataFrame([{"Username": st.session_state.username, "Exercise": pr_ex, "WeightMax": pr_val}])], ignore_index=True).to_csv(pr_ledger_file, index=False)
             st.success(f"PR updated successfully for `{pr_ex}`!")
             
         st.write("---")
         if os.path.exists(pr_ledger_file):
             pr_df = load_and_normalize_db(pr_ledger_file)
-            st.dataframe(pr_df[pr_df['Username'] == st.session_state.username][['Exercise', 'Weightmax']].reset_index(drop=True), use_container_width=True)
+            if not pr_df.empty and 'Username' in pr_df.columns:
+                st.dataframe(pr_df[pr_df['Username'] == st.session_state.username][['Exercise', 'Weightmax']].reset_index(drop=True), use_container_width=True)
             
     with p_tab3:
         st.markdown("### 🖼️ Private Transformation Progress Photo Vault")
-        st.write("Upload and secure your weekly physical progress shots here to audit visual structural composition updates.")
         st.file_uploader("Select weekly progress photo configuration file snapshot tracking layer:", type=["jpg", "jpeg", "png"])
-        st.info("🔒 Secure local storage sandboxing engine active. Images are encrypted directly within local memory buffers.")
+        st.info("🔒 Secure local storage sandboxing engine active.")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================================================
@@ -361,7 +374,6 @@ elif active_mod == "📊 Analytical Progress":
 elif active_mod == "💳 Payment Hub":
     st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
     st.markdown("## 💳 OPERATION BILLING GATEWAY CONTROL")
-    st.write("Select package modules to initiate digital signature remittance configurations:")
     pay_cols = st.columns(3)
     pay_cols[0].button("💪 Monthly Gold\n\n ₹1,500 / Month", use_container_width=True, key="m1")
     pay_cols[1].button("🔥 Quarterly Bulk Pack\n\n ₹4,000 / 3 Months", use_container_width=True, key="m2")
@@ -384,7 +396,6 @@ elif active_mod == "👤 Profile Node":
 elif active_mod == "👑 Operational HQ" and is_owner:
     st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
     st.markdown("## 👑 OWNER OPERATIONAL COMMAND MANAGEMENT")
-    st.write("Monitor total system registrations, audit active operational files, and manage financial parameters.")
     
     hq_tab1, hq_tab2 = st.tabs(["👥 User Records Index Engine", "📈 Global Analytics Data Stream"])
     with hq_tab1:
@@ -394,3 +405,4 @@ elif active_mod == "👑 Operational HQ" and is_owner:
             st.write("#### Global Client Biometric Sentiment Data Streams")
             st.dataframe(load_and_normalize_db(checkin_ledger_file), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
+
